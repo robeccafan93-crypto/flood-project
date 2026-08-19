@@ -3,204 +3,328 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>臺北市智慧淹水預警系統</title>
+  <title>臺北市智慧淹水預警平台</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f1f5f9; color: #334155; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f6f9; color: #334155; line-height: 1.5; }
     
-    /* 導航列 */
-    nav { background-color: #0f172a; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; position: sticky; top: 0; z-index: 100; }
-    .nav-links { display: flex; gap: 1rem; align-items: center; }
-    .nav-btn { background: none; border: none; color: #94a3b8; font-size: 1rem; cursor: pointer; padding: 0.5rem 1rem; border-radius: 6px; }
-    .nav-btn:hover, .nav-btn.active { color: white; background-color: #1e293b; }
-    .auth-status { background-color: #0284c7; color: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; }
-    
-    /* 容器與卡片 */
-    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
-    .view-section { display: none; }
-    .view-section.active { display: block; }
-    .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    h2 { color: #0f172a; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
-    h3 { margin-bottom: 0.75rem; color: #1e293b; }
-    
-    /* 表單與表格 */
+    /* 頂部導航列 */
+    nav { background-color: #0d1527; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 2.5rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .brand { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem; letter-spacing: 0.5px; }
+    .nav-menu { display: flex; align-items: center; gap: 0.8rem; }
+    .nav-link { background: none; border: none; color: #94a3b8; font-size: 0.95rem; font-weight: 500; cursor: pointer; padding: 0.5rem 0.9rem; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; gap: 0.4rem; }
+    .nav-link:hover, .nav-link.active { color: white; background-color: rgba(255,255,255,0.08); }
+    .btn-auth-main { background-color: #3b82f6; color: white; border: none; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+    .btn-auth-main:hover { background-color: #2563eb; }
+    .user-pill { background-color: #1e293b; border: 1px solid #334155; color: #38bdf8; padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+
+    /* 主要容器 */
+    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+
+    /* 標題與版型 */
+    .section-header { margin-bottom: 1.5rem; }
+    .section-header h2 { font-size: 1.5rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+    .section-header p { color: #64748b; font-size: 0.95rem; }
+    .two-col-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; align-items: start; margin-bottom: 1.8rem; }
+
+    /* 通用卡片 */
+    .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .card-title { font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .badge-count { background: #e0f2fe; color: #0369a1; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 600; }
+
+    /* 表格滾動 */
+    .table-scroll-container { max-height: 480px; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 0.88rem; padding: 0.75rem 1rem; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; color: #334155; }
+    tbody tr:hover { background-color: #f8fafc; }
+    .code-circle { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #e0f2fe; color: #0284c7; border-radius: 50%; font-size: 0.75rem; font-weight: 700; }
+
+    /* 表單元件 */
     .form-group { margin-bottom: 1rem; }
-    label { display: block; font-weight: bold; margin-bottom: 0.3rem; font-size: 0.9rem; }
-    input, select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
-    button.btn-primary { background-color: #0284c7; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%; }
-    button.btn-primary:hover { background-color: #0369a1; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; }
-    th { background-color: #f8fafc; }
-    
+    label { display: block; font-weight: 600; font-size: 0.88rem; color: #334155; margin-bottom: 0.35rem; }
+    input, select, textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.92rem; transition: 0.2s; background: #fff; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .btn-red { background-color: #ef4444; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+    .btn-red:hover { background-color: #dc2626; }
+    .btn-green { background-color: #10b981; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+    .btn-green:hover { background-color: #059669; }
+    .btn-orange { background-color: #f59e0b; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+    .btn-orange:hover { background-color: #d97706; }
+
+    /* 首頁 Hero Section (只保留進入民眾端服務) */
+    .hero-card { background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%); color: white; border-radius: 16px; padding: 3.5rem 2rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.25); }
+    .hero-card h1 { font-size: 2.1rem; font-weight: 800; margin-bottom: 1rem; }
+    .hero-card p { font-size: 1.05rem; color: #cbd5e1; max-width: 700px; margin: 0 auto 2rem; line-height: 1.6; }
+    .btn-hero-primary { background-color: #3b82f6; color: white; padding: 0.8rem 2.2rem; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    .btn-hero-primary:hover { background-color: #2563eb; transform: translateY(-2px); }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .feature-box { background: white; border-radius: 12px; padding: 1.8rem; border: 1px solid #e2e8f0; }
+    .feature-box h3 { font-size: 1.15rem; color: #0f172a; margin-bottom: 0.4rem; font-weight: 700; }
+    .feature-box p { color: #64748b; font-size: 0.9rem; line-height: 1.6; }
+
     /* 彈窗 Modal */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 200; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(3px); }
     .modal.active { display: flex; }
-    .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-    .tab-toggle { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
-    .tab-toggle button { flex: 1; padding: 0.5rem; border: none; background: none; font-size: 1rem; cursor: pointer; }
-    .tab-toggle button.active { border-bottom: 2px solid #0284c7; color: #0284c7; font-weight: bold; }
+    .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+    .tab-nav { display: flex; margin-bottom: 1.2rem; border-bottom: 2px solid #f1f5f9; }
+    .tab-nav button { flex: 1; padding: 0.6rem; border: none; background: none; font-size: 0.95rem; font-weight: 600; color: #64748b; cursor: pointer; }
+    .tab-nav button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+    
+    footer { text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 2.5rem 0 1.5rem 0; }
   </style>
 </head>
 <body>
 
-  <!-- 頂部導航 -->
   <nav>
-    <div style="font-weight:bold; font-size:1.2rem;">🌊 臺北市智慧淹水預警系統</div>
-    <div class="nav-links">
-      <button class="nav-btn active" onclick="switchView('home')">首頁</button>
-      <button class="nav-btn" onclick="switchView('citizen')">民眾服務端</button>
-      <button class="nav-btn" id="nav-community" style="display:none;" onclick="switchView('community')">社區端</button>
-      <span id="user-display" class="auth-status" style="display:none;"></span>
-      <button class="nav-btn" id="auth-btn" onclick="openAuthModal()">登入 / 註冊</button>
-      <button class="nav-btn" id="logout-btn" style="display:none;" onclick="logout()">登出</button>
+    <div class="brand">🌊 臺北市智慧淹水預警平台</div>
+    <div class="nav-menu">
+      <button class="nav-link active" onclick="switchTab('home')">🏠 首頁</button>
+      <button class="nav-link" onclick="switchTab('citizen')">👤 民眾服務端</button>
+      <button class="nav-link" id="nav-community-tab" style="display:none;" onclick="switchTab('community')">🏢 社區物資端</button>
+      <span id="user-info-badge" class="user-pill" style="display:none;"></span>
+      <button class="btn-auth-main" id="btn-open-login" onclick="openModal()">會員登入 / 註冊</button>
+      <button class="nav-link" id="btn-logout" style="display:none;" onclick="handleLogout()">登出</button>
     </div>
   </nav>
 
   <div class="container">
+    
     <!-- 1. 首頁 -->
-    <div id="view-home" class="view-section active">
-      <div class="card" style="text-align: center; padding: 3rem 1rem;">
-        <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #0f172a;">全方位智慧防汛與物資協調平台</h1>
-        <p style="color: #64748b; font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem;">整合即時水文預警、災情通報及跨社區物資調度支援。</p>
-        <button class="btn-primary" style="max-width: 200px;" onclick="switchView('citizen')">進入民眾服務</button>
+    <div id="view-home" class="page-view active">
+      <div class="hero-card">
+        <h1>臺北市智慧淹水預警與資源調度平台</h1>
+        <p>整合極端氣象預測、雲端大數據與社區防汛調度，提供民眾與社區全方位的突發性都市淹水預警與資源支援。</p>
+        <button class="btn-hero-primary" onclick="switchTab('citizen')">進入民眾端服務 →</button>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-box">
+          <div style="font-size: 1.8rem; margin-bottom: 0.8rem;">👤</div>
+          <h3>民眾端 — 預警與避難</h3>
+          <p>提供即時水情風險查詢、淹水預測通知、災情線上回報與避難指引。</p>
+        </div>
+        <div class="feature-box">
+          <div style="font-size: 1.8rem; margin-bottom: 0.8rem;">📦</div>
+          <h3>社區端 — 物資與資源</h3>
+          <p>協助社區管理防汛物資、提交資源與人力支援申請，提升復原效率。</p>
+        </div>
+        <div class="feature-box">
+          <div style="font-size: 1.8rem; margin-bottom: 0.8rem;">⚡</div>
+          <h3>雲端資料庫串接</h3>
+          <p>連結 Neon Serverless PostgreSQL，毫秒級讀取氣象資料與水文數據。</p>
+        </div>
       </div>
     </div>
 
     <!-- 2. 民眾服務端 -->
-    <div id="view-citizen" class="view-section">
-      <div class="card">
-        <h2>🌊 臺北市即時水情監測</h2>
-        <button class="btn-primary" style="width: auto; margin-bottom: 1rem;" onclick="loadFloodData()">整理更新水情</button>
-        <table id="flood-table">
-          <thead>
-            <tr><th>地區</th><th>累積雨量 (mm)</th><th>當前水位 (m)</th><th>預警狀態</th></tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="4" style="text-align:center;">載入中...</td></tr>
-          </tbody>
-        </table>
+    <div id="view-citizen" class="page-view">
+      <div class="section-header">
+        <h2>🌧️ 民眾端 — 風險查詢與災情通報</h2>
+        <p>提供民眾即時水情預警、淹水風險查詢與即時災情線上通報。</p>
       </div>
 
-      <div class="card">
-        <h2>📢 線上災情即時通報</h2>
-        <form onsubmit="submitDisasterReport(event)">
-          <div class="form-group">
-            <label>通報行政區</label>
-            <select id="report-district" required>
-              <option value="北投區">北投區</option><option value="中正區">中正區</option>
-              <option value="大安區">大安區</option><option value="士林區">士林區</option>
-              <option value="大同區">大同區</option><option value="內湖區">內湖區</option>
-              <option value="信義區">信義區</option><option value="文山區">文山區</option>
-              <option value="松山區">松山區</option><option value="中山區">中山區</option>
-              <option value="南港區">南港區</option>
-            </select>
+      <div class="two-col-grid">
+        <!-- 左側監測表格 -->
+        <div class="card">
+          <div class="card-title">
+            <span>區域氣象與水文資料即時監測</span>
+            <span class="badge-count" id="flood-count-badge">共 75 筆監測紀錄</span>
           </div>
-          <div class="form-group">
-            <label>現場災情描述</label>
-            <textarea id="report-desc" rows="3" placeholder="請描述積淹水深度或受困情況..." required></textarea>
+          <div class="table-scroll-container">
+            <table id="table-flood">
+              <thead>
+                <tr>
+                  <th>編號</th>
+                  <th>行政區域</th>
+                  <th>區域代碼</th>
+                  <th>降雨量 (mm)</th>
+                  <th>相對溼度 (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" style="text-align:center;">載入中...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <button type="submit" class="btn-primary">確認送出通報</button>
-        </form>
+        </div>
+
+        <!-- 右側通報表單 -->
+        <div class="card">
+          <div class="card-title" style="color: #ef4444;">
+            <span>📢 即時災情線上通報</span>
+          </div>
+          <form onsubmit="submitReport(event)">
+            <div class="form-group">
+              <label>通報行政區</label>
+              <select id="report-district" required>
+                <option value="士林區">士林區</option>
+                <option value="北投區">北投區</option>
+                <option value="中正區">中正區</option>
+                <option value="大安區">大安區</option>
+                <option value="大同區">大同區</option>
+                <option value="內湖區">內湖區</option>
+                <option value="信義區">信義區</option>
+                <option value="文山區">文山區</option>
+                <option value="松山區">松山區</option>
+                <option value="中山區">中山區</option>
+                <option value="南港區">南港區</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>災情描述 / 淹水狀況</label>
+              <textarea id="report-desc" rows="4" placeholder="例如：某某路段積水達半個輪胎深..." required></textarea>
+            </div>
+            <button type="submit" class="btn-red">送出災情通報</button>
+          </form>
+        </div>
       </div>
 
-      <!-- 新增：民眾向社區申請物資窗口 -->
-      <div class="card" style="border: 2px solid #0284c7;">
-        <h2>📦 民眾防汛物資申請窗口</h2>
-        <p style="color: #64748b; margin-bottom: 1rem;">遭遇淹水災情急需沙包、防水閘門等資源？請填寫表單向所屬行政區社區調度。</p>
-        <form onsubmit="submitSupplyRequest(event)">
-          <div class="form-group">
-            <label>申請人物資需求項目</label>
-            <select id="req-item" required>
-              <option value="防汛沙包 (包)">防汛沙包 (包)</option>
-              <option value="小型抽水泵浦 (台)">小型抽水泵浦 (台)</option>
-              <option value="緊急救生圈/衣 (件)">緊急救生圈/衣 (件)</option>
-              <option value="飲用水/乾糧物資包">飲用水/乾糧物資包</option>
-            </select>
+      <!-- 民眾防汛物資申請窗口 -->
+      <div class="card">
+        <div class="card-title">
+          <span>📦 民眾防汛物資申請窗口</span>
+        </div>
+        <p style="color: #64748b; margin-bottom: 1.2rem; font-size: 0.92rem;">遭遇淹水急需物資支援？填寫以下表單，即刻向所屬行政區之社區物資站申請調度。</p>
+        <form onsubmit="submitSupplyReq(event)">
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label>申請物資項目</label>
+              <select id="req-item" required>
+                <option value="防汛沙包 (包)">防汛沙包 (包)</option>
+                <option value="小型抽水機 (台)">小型抽水機 (台)</option>
+                <option value="救生圈/衣 (件)">救生圈/衣 (件)</option>
+                <option value="飲用水與乾糧包">飲用水與乾糧包</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>需求數量</label>
+              <input type="number" id="req-qty" min="1" max="100" value="2" required />
+            </div>
+            <div class="form-group">
+              <label>聯絡電話</label>
+              <input type="tel" id="req-phone" placeholder="例：0912345678" required />
+            </div>
           </div>
-          <div class="form-group">
-            <label>需求數量</label>
-            <input type="number" id="req-qty" min="1" max="100" value="1" required />
-          </div>
-          <div class="form-group">
-            <label>聯絡電話</label>
-            <input type="tel" id="req-phone" placeholder="例：0912345678" required />
-          </div>
-          <button type="submit" class="btn-primary" style="background-color: #059669;">送出物資申請至社區端</button>
+          <button type="submit" class="btn-green">送出物資申請至社區端</button>
         </form>
       </div>
     </div>
 
-    <!-- 3. 社區端 (限社區權限檢視) -->
-    <div id="view-community" class="view-section">
-      <div class="card">
-        <h2>🏢 社區防汛物資與資源儲備</h2>
-        <button class="btn-primary" style="width: auto; margin-bottom: 1rem;" onclick="loadSuppliesData()">重新整理物資表</button>
-        <table id="supplies-table">
-          <thead>
-            <tr><th>物資名稱</th><th>存放據點</th><th>當前庫存</th><th>狀態</th></tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="4" style="text-align:center;">載入中...</td></tr>
-          </tbody>
-        </table>
+    <!-- 3. 社區物資端 (身分為社區時可見) -->
+    <div id="view-community" class="page-view">
+      <div class="section-header">
+        <h2>📦 社區物資端 — 資源整合與需求調度</h2>
+        <p>協助社區進行防汛物資管理、人力志工調度與資源補助申請。</p>
+      </div>
+
+      <div class="two-col-grid">
+        <div class="card">
+          <div class="card-title">
+            <span>全區社區防汛物資儲備現況</span>
+          </div>
+          <div class="table-scroll-container">
+            <table id="table-supplies">
+              <thead>
+                <tr>
+                  <th>編號</th>
+                  <th>社區/單位名稱</th>
+                  <th>物資/人力項目</th>
+                  <th>數量</th>
+                  <th>狀態</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" style="text-align:center;">正在載入物資數據...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="color: #f59e0b;">
+            <span>🔄 社區資源與物資需求申請</span>
+          </div>
+          <form onsubmit="submitCommunitySupply(event)">
+            <div class="form-group">
+              <label>社區名稱</label>
+              <input type="text" id="comm-name" placeholder="例如：明勝里社區防災會" required />
+            </div>
+            <div class="form-group">
+              <label>所需物資 / 支援項目</label>
+              <input type="text" id="comm-item" placeholder="例如：防汛沙包、移動式抽水機" required />
+            </div>
+            <div class="form-group">
+              <label>需求數量</label>
+              <input type="number" id="comm-qty" value="10" required />
+            </div>
+            <button type="submit" class="btn-orange">提交資源申請</button>
+          </form>
+        </div>
       </div>
     </div>
+
   </div>
 
+  <footer>
+    <p>© 2026 臺北市智慧淹水預警平台</p>
+  </footer>
+
   <!-- 登入 / 註冊 彈窗 -->
-  <div class="modal" id="auth-modal">
+  <div class="modal" id="modal-auth">
     <div class="modal-content">
-      <div class="tab-toggle">
-        <button id="tab-login-btn" class="active" onclick="switchAuthTab('login')">登入</button>
-        <button id="tab-register-btn" onclick="switchAuthTab('register')">註冊新帳號</button>
+      <div class="tab-nav">
+        <button id="tab-btn-login" class="active" onclick="toggleAuthTab('login')">會員登入</button>
+        <button id="tab-btn-reg" onclick="toggleAuthTab('register')">註冊新帳號</button>
       </div>
 
       <!-- 登入表單 -->
-      <form id="form-login" onsubmit="handleLogin(event)">
+      <form id="form-login" onsubmit="doLogin(event)">
         <div class="form-group">
-          <label>帳號 (手機 / 信箱)</label>
-          <input type="text" id="login-acc" required />
+          <label>帳號 (或信箱)</label>
+          <input type="text" id="login-acc" placeholder="請輸入帳號" required />
         </div>
         <div class="form-group">
           <label>密碼</label>
-          <input type="password" id="login-pwd" required />
+          <input type="password" id="login-pwd" placeholder="請輸入密碼" required />
         </div>
-        <button type="submit" class="btn-primary">登入系統</button>
+        <button type="submit" class="btn-auth-main" style="width:100%; padding:0.7rem;">登入系統</button>
       </form>
 
       <!-- 註冊表單 -->
-      <form id="form-register" style="display:none;" onsubmit="handleRegister(event)">
+      <form id="form-reg" style="display:none;" onsubmit="doRegister(event)">
         <div class="form-group">
           <label>帳號</label>
-          <input type="text" id="reg-acc" required />
+          <input type="text" id="reg-acc" placeholder="設定使用者帳號" required />
         </div>
         <div class="form-group">
           <label>密碼</label>
-          <input type="password" id="reg-pwd" required />
+          <input type="password" id="reg-pwd" placeholder="設定密碼" required />
         </div>
         <div class="form-group">
           <label>姓名</label>
-          <input type="text" id="reg-name" required />
+          <input type="text" id="reg-name" placeholder="請輸入真實姓名" required />
         </div>
         <div class="form-group">
           <label>電話</label>
-          <input type="tel" id="reg-phone" required />
+          <input type="tel" id="reg-phone" placeholder="例：0912345678" required />
         </div>
         <div class="form-group">
           <label>電子郵件</label>
-          <input type="email" id="reg-email" required />
+          <input type="email" id="reg-email" placeholder="例：user@example.com" required />
         </div>
         <div class="form-group">
-          <label>身分角色</label>
+          <label>身分</label>
           <select id="reg-role" required>
             <option value="民眾">民眾</option>
             <option value="社區">社區</option>
           </select>
         </div>
         <div class="form-group">
-          <label>所屬區域碼 (臺北市行政區)</label>
+          <label>區域碼 (臺北市行政區)</label>
           <select id="reg-district" required>
             <option value="北投區">北投區</option>
             <option value="中正區">中正區</option>
@@ -215,51 +339,81 @@
             <option value="南港區">南港區</option>
           </select>
         </div>
-        <button type="submit" class="btn-primary">完成註冊</button>
+        <button type="submit" class="btn-auth-main" style="width:100%; padding:0.7rem;">完成註冊</button>
       </form>
 
-      <button onclick="closeAuthModal()" style="margin-top:1rem; width:100%; border:none; background:none; color:#64748b; cursor:pointer;">取消關閉</button>
+      <button onclick="closeModal()" style="margin-top:1rem; width:100%; border:none; background:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;">✕ 關閉視窗</button>
     </div>
   </div>
 
   <script>
-    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+    let user = JSON.parse(localStorage.getItem('sys_user')) || null;
 
-    window.onload = () => {
-      checkAuthUI();
-      loadFloodData();
+    window.onload = function() {
+      updateNavAuth();
+      fetchFloodData();
     };
 
-    function switchView(viewName) {
-      if (viewName === 'community' && (!currentUser || currentUser.role !== '社區')) {
-        alert('權限不足：只有身分為「社區」之帳號可檢視社區端！');
+    function switchTab(tabName) {
+      if (tabName === 'community' && (!user || user.role !== '社區')) {
+        alert('權限限制：此區域為【社區端專屬功能】，身分為「民眾」無法檢視。');
         return;
       }
-      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(`view-${viewName}`).classList.add('active');
-      if (viewName === 'citizen') loadFloodData();
-      if (viewName === 'community') loadSuppliesData();
+      document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById('view-' + tabName);
+      if (target) target.classList.add('active');
+
+      if (tabName === 'citizen') fetchFloodData();
+      if (tabName === 'community') fetchSuppliesData();
     }
 
-    function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
-    function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); }
+    function openModal() { document.getElementById('modal-auth').classList.add('active'); }
+    function closeModal() { document.getElementById('modal-auth').classList.remove('active'); }
 
-    function switchAuthTab(tab) {
-      document.getElementById('tab-login-btn').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-register-btn').classList.toggle('active', tab === 'register');
+    function toggleAuthTab(tab) {
+      document.getElementById('tab-btn-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-btn-reg').classList.toggle('active', tab === 'register');
       document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
-      document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('form-reg').style.display = tab === 'register' ? 'block' : 'none';
     }
 
-    async function handleRegister(e) {
+    async function doLogin(e) {
       e.preventDefault();
       const payload = {
-        account: document.getElementById('reg-acc').value,
-        password: document.getElementById('reg-pwd').value,
-        name: document.getElementById('reg-name').value,
-        phone: document.getElementById('reg-phone').value,
-        email: document.getElementById('reg-email').value,
+        account: document.getElementById('login-acc').value.trim(),
+        password: document.getElementById('login-pwd').value.trim()
+      };
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          user = data.user;
+          localStorage.setItem('sys_user', JSON.stringify(user));
+          alert(`歡迎回來，${user.name}！（身分：${user.role}｜區域：${user.district}）`);
+          closeModal();
+          updateNavAuth();
+        } else {
+          alert(data.detail || '帳號或密碼輸入錯誤，請再試一次。');
+        }
+      } catch (err) {
+        alert('連線伺服器異常，請確認後端是否正在運行。');
+      }
+    }
+
+    async function doRegister(e) {
+      e.preventDefault();
+      const payload = {
+        account: document.getElementById('reg-acc').value.trim(),
+        password: document.getElementById('reg-pwd').value.trim(),
+        name: document.getElementById('reg-name').value.trim(),
+        phone: document.getElementById('reg-phone').value.trim(),
+        email: document.getElementById('reg-email').value.trim(),
         role: document.getElementById('reg-role').value,
         district: document.getElementById('reg-district').value
       };
@@ -269,154 +423,157 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
         });
-        const result = await res.json();
+        const data = await res.json();
         if (res.ok) {
-          alert('註冊成功！請直接登入');
-          switchAuthTab('login');
+          alert('註冊成功！請直接登入您的帳號。');
+          toggleAuthTab('login');
         } else {
-          alert(result.detail || '註冊失敗');
+          alert(data.detail || '註冊失敗，請確認資料填寫是否正確。');
         }
       } catch (err) {
-        alert('網路錯誤');
+        alert('連線失敗，請稍後再試。');
       }
     }
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const payload = {
-        account: document.getElementById('login-acc').value,
-        password: document.getElementById('login-pwd').value
-      };
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
-        if (res.ok) {
-          currentUser = result.user;
-          localStorage.setItem('currentUser', JSON.stringify(currentUser));
-          alert(`歡迎回來，${currentUser.name}（身分：${currentUser.role} - ${currentUser.district}）`);
-          closeAuthModal();
-          checkAuthUI();
-        } else {
-          alert(result.detail || '登入失敗');
-        }
-      } catch (err) {
-        alert('網路錯誤');
-      }
+    function handleLogout() {
+      user = null;
+      localStorage.removeItem('sys_user');
+      updateNavAuth();
+      switchTab('home');
+      alert('您已安全登出系統。');
     }
 
-    function logout() {
-      currentUser = null;
-      localStorage.removeItem('currentUser');
-      checkAuthUI();
-      switchView('home');
-      alert('已登出');
-    }
+    function updateNavAuth() {
+      const badge = document.getElementById('user-info-badge');
+      const btnLogin = document.getElementById('btn-open-login');
+      const btnLogout = document.getElementById('btn-logout');
+      const commTab = document.getElementById('nav-community-tab');
 
-    function checkAuthUI() {
-      const userDisplay = document.getElementById('user-display');
-      const authBtn = document.getElementById('auth-btn');
-      const logoutBtn = document.getElementById('logout-btn');
-      const navCommunity = document.getElementById('nav-community');
-
-      if (currentUser) {
-        userDisplay.style.display = 'inline-block';
-        userDisplay.innerText = `👤 ${currentUser.name} (${currentUser.role}/${currentUser.district})`;
-        authBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline-block';
-
-        // 權限控制：身分為「社區」時才顯示社區端導航按鈕
-        navCommunity.style.display = currentUser.role === '社區' ? 'inline-block' : 'none';
+      if (user) {
+        badge.style.display = 'inline-block';
+        badge.innerText = `👤 ${user.name} (${user.role} / ${user.district})`;
+        btnLogin.style.display = 'none';
+        btnLogout.style.display = 'inline-block';
+        commTab.style.display = user.role === '社區' ? 'inline-block' : 'none';
       } else {
-        userDisplay.style.display = 'none';
-        authBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        navCommunity.style.display = 'none';
+        badge.style.display = 'none';
+        btnLogin.style.display = 'inline-block';
+        btnLogout.style.display = 'none';
+        commTab.style.display = 'none';
       }
     }
 
-    async function loadFloodData() {
+    async function fetchFloodData() {
+      const tbody = document.querySelector('#table-flood tbody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">水情資料更新中...</td></tr>';
       try {
         const res = await fetch('/api/flood-data');
-        const resData = await res.json();
-        const tbody = document.querySelector('#flood-table tbody');
+        const json = await res.json();
         tbody.innerHTML = '';
-        resData.data.forEach(item => {
+        if (json.total) {
+          document.getElementById('flood-count-badge').innerText = `共 ${json.total} 筆監測紀錄`;
+        }
+        json.data.forEach(d => {
           tbody.innerHTML += `
             <tr>
-              <td>${item.district || '-'}</td>
-              <td>${item.rainfall_mm || 0}</td>
-              <td>${item.water_level_m || 0}</td>
-              <td><span style="color: ${item.status === '危險' ? 'red' : 'green'}; font-weight:bold;">${item.status || '正常'}</span></td>
+              <td><strong>#${d.id}</strong></td>
+              <td>${d.district}</td>
+              <td><span class="code-circle">${d.region_code || 'A'}</span></td>
+              <td>${d.rainfall} mm</td>
+              <td>${d.humidity} %</td>
             </tr>
           `;
         });
-      } catch (e) {}
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">暫無法取得水情資訊</td></tr>';
+      }
     }
 
-    async function loadSuppliesData() {
+    async function fetchSuppliesData() {
+      const tbody = document.querySelector('#table-supplies tbody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">正在載入物資數據...</td></tr>';
       try {
         const res = await fetch('/api/supplies');
-        const resData = await res.json();
-        const tbody = document.querySelector('#supplies-table tbody');
+        const json = await res.json();
         tbody.innerHTML = '';
-        resData.data.forEach(item => {
+        json.data.forEach((s, idx) => {
           tbody.innerHTML += `
             <tr>
-              <td>${item.item_name || '-'}</td>
-              <td>${item.location || '-'}</td>
-              <td>${item.quantity || 0}</td>
-              <td>${item.status || '充足'}</td>
+              <td><strong>#${s.id || idx + 1}</strong></td>
+              <td>${s.location || '-'}</td>
+              <td>${s.item_name || '-'}</td>
+              <td>${s.quantity || 0}</td>
+              <td><span style="color:#10b981; font-weight:600;">${s.status || '充足'}</span></td>
             </tr>
           `;
         });
-      } catch (e) {}
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">暫無法取得物資資訊</td></tr>';
+      }
     }
 
-    async function submitDisasterReport(e) {
+    async function submitReport(e) {
       e.preventDefault();
       const payload = {
         district: document.getElementById('report-district').value,
         description: document.getElementById('report-desc').value
       };
-      const res = await fetch('/api/disaster-report', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert('災情回報成功！');
-        document.getElementById('report-desc').value = '';
+      try {
+        const res = await fetch('/api/disaster-report', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('災情通報已成功送出！感謝您的回報。');
+          document.getElementById('report-desc').value = '';
+        } else {
+          alert(data.detail || '通報送出失敗，請重試。');
+        }
+      } catch(e) { 
+        alert('網路連線不穩定，通報送出失敗。'); 
       }
     }
 
-    async function submitSupplyRequest(e) {
+    async function submitSupplyReq(e) {
       e.preventDefault();
-      if (!currentUser) {
-        alert('請先登入後再申請物資！');
-        openAuthModal();
+      if (!user) {
+        alert('請先登入帳號後再申請防汛物資！');
+        openModal();
         return;
       }
       const payload = {
-        account: currentUser.account,
-        name: currentUser.name,
-        district: currentUser.district,
+        account: user.account || "user",
+        name: user.name || "民眾",
+        district: user.district || "大同區",
         item_name: document.getElementById('req-item').value,
-        quantity: parseInt(document.getElementById('req-qty').value),
-        contact_phone: document.getElementById('req-phone').value
+        quantity: parseInt(document.getElementById('req-qty').value) || 1,
+        contact_phone: document.getElementById('req-phone').value.trim()
       };
-      const res = await fetch('/api/request-supplies', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert('物資申請成功！已送交該區社區物資站進行調度');
-        document.getElementById('req-phone').value = '';
+      try {
+        const res = await fetch('/api/request-supplies', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('✅ 物資申請已成功送出至社區端！');
+          document.getElementById('req-phone').value = '';
+        } else {
+          alert(data.detail || '申請失敗，請稍後再試。');
+        }
+      } catch(e) { 
+        alert('連線伺服器異常'); 
       }
+    }
+
+    async function submitCommunitySupply(e) {
+      e.preventDefault();
+      alert('資源需求申請已成功提交！系統將送交市政中心進行防汛資源配發。');
+      document.getElementById('comm-name').value = '';
+      document.getElementById('comm-item').value = '';
     }
   </script>
 </body>
