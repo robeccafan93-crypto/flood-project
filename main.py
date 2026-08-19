@@ -1,214 +1,164 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel
-from typing import Optional
-import psycopg2
-import psycopg2.extras
 import os
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from starlette.requests import Request
+from pydantic import BaseModel
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = FastAPI(title="臺北市智慧淹水預警系統 API")
 
-# 掛載靜態檔案 (CSS, JS)
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-# 雲端 Neon PostgreSQL 連線字串
 DB_CONNECTION_STRING = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://neondb_owner:npg_BbAq2rUeTQD9@ep-sweet-dawn-azygay6t.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_gY0l5nTCFjSo@ep-square-hill-a1p3a2rq-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 )
 
 def get_db_connection():
-    return psycopg2.connect(DB_CONNECTION_STRING, cursor_factory=psycopg2.extras.RealDictCursor)
+    return psycopg2.connect(DB_CONNECTION_STRING, cursor_factory=RealDictCursor)
 
-# --- 資料模型 (Pydantic Schemas) ---
-class RegisterSchema(BaseModel):
-    username: str
+# --- 資料模型 ---
+class RegisterData(BaseModel):
+    account: str
     password: str
-    email: Optional[str] = None
-    role: Optional[str] = "citizen"
+    name: str
+    phone: str
+    email: str
+    role: str
+    district: str
 
-class LoginSchema(BaseModel):
-    username: str
+class LoginData(BaseModel):
+    account: str
     password: str
 
-class DisasterReportSchema(BaseModel):
-    user_id: Optional[int] = None
-    region: str
+class DisasterReportData(BaseModel):
+    district: str
     description: str
 
-class SupplyRequestSchema(BaseModel):
-    community_name: str
+class SupplyRequestData(BaseModel):
+    account: str
+    name: str
+    district: str
     item_name: str
     quantity: int
+    contact_phone: str
 
-# --- API Routes ---
-
+# --- 頁面路由 ---
 @app.get("/", response_class=HTMLResponse)
-def read_root():
-    return FileResponse("templates/index.html")
+def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-# 1. 讀取氣象與水文即時監測資料 (對接 flood_summary 表格)
+# --- 會員註冊 (直接對應現有的 users 欄位) ---
+@app.post("/api/register")
+def register(data: RegisterData):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO users (username, password_hash, name, phone, email, role, region_code)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (data.account, data.password, data.name, data.phone, data.email, data.role, data.district)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "message": "註冊成功"}
+    except psycopg2.IntegrityError:
+        raise HTTPException(status_code=400, detail="該帳號已被註冊")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 會員登入 ---
+@app.post("/api/login")
+def login(data: LoginData):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, username, name, phone, email, role, region_code FROM users WHERE username = %s AND password_hash = %s",
+        (data.account, data.password)
+    )
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=401, detail="帳號或密碼錯誤")
+    return {
+        "status": "success",
+        "user": {
+            "account": user["username"],
+            "name": user["name"],
+            "role": user["role"],
+            "district": user["region_code"]
+        }
+    }
+
+# --- 水情資料查詢 ---
 @app.get("/api/flood-data")
 def get_flood_data():
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        # 精準查詢 flood_summary 資料表
-        cursor.execute("SELECT * FROM flood_summary ORDER BY id ASC;")
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return {"status": "success", "count": len(rows), "data": rows}
-    except Exception as e:
-        if conn:
-            conn.close()
-        return {"status": "error", "message": str(e)}
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM flood_summary ORDER BY id ASC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return {"status": "success", "data": rows}
 
-# 2. 民眾端 - 災情通報 API
+# --- 災情通報 ---
 @app.post("/api/disaster-report")
-def report_disaster(data: DisasterReportSchema):
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS disaster_reports (
-                id SERIAL PRIMARY KEY,
-                user_id INT,
-                region VARCHAR(50),
-                description TEXT,
-                status VARCHAR(20) DEFAULT '待處理',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        cursor.execute(
-            "INSERT INTO disaster_reports (user_id, region, description) VALUES (%s, %s, %s);",
-            (data.user_id, data.region, data.description)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return {"status": "success", "message": "災情通報已成功送出！應變中心將儘速處理。"}
-    except Exception as e:
-        if conn:
-            conn.rollback()
-            conn.close()
-        return {"status": "error", "message": f"通報失敗: {str(e)}"}
+def report_disaster(data: DisasterReportData):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO disaster_reports (district, description) VALUES (%s, %s)",
+        (data.district, data.description)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "success", "message": "通報已送出"}
 
-# 3. 社區物資端 - 物資清單與需求申請 API
+# --- 社區物資列表 ---
 @app.get("/api/supplies")
 def get_supplies():
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS supplies (
-                id SERIAL PRIMARY KEY,
-                community_name VARCHAR(100),
-                item_name VARCHAR(100),
-                quantity INT,
-                status VARCHAR(20) DEFAULT '儲備中',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        conn.commit()
-        cursor.execute("SELECT * FROM supplies ORDER BY id DESC;")
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return {"status": "success", "data": rows}
-    except Exception as e:
-        if conn:
-            conn.close()
-        return {"status": "error", "message": str(e)}
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM supplies ORDER BY id ASC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return {"status": "success", "data": rows}
 
-@app.post("/api/supplies")
-def request_supply(data: SupplyRequestSchema):
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS supplies (
-                id SERIAL PRIMARY KEY,
-                community_name VARCHAR(100),
-                item_name VARCHAR(100),
-                quantity INT,
-                status VARCHAR(20) DEFAULT '申請中',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        cursor.execute(
-            "INSERT INTO supplies (community_name, item_name, quantity, status) VALUES (%s, %s, %s, '申請中');",
-            (data.community_name, data.item_name, data.quantity)
+# --- 民眾物資申請 ---
+@app.post("/api/request-supplies")
+def request_supplies(data: SupplyRequestData):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # 建立暫存需求表（若不存在會自動建）
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS supplies_requests (
+            id SERIAL PRIMARY KEY,
+            user_account VARCHAR(100),
+            user_name VARCHAR(100),
+            district VARCHAR(50),
+            item_name VARCHAR(100),
+            quantity INT,
+            contact_phone VARCHAR(50),
+            status VARCHAR(50) DEFAULT '處理中',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return {"status": "success", "message": "社區物資需求已成功提交至調度中心！"}
-    except Exception as e:
-        if conn:
-            conn.rollback()
-            conn.close()
-        return {"status": "error", "message": f"申請失敗: {str(e)}"}
-
-# 4. 會員註冊 API (對應 users 資料表)
-@app.post("/api/register")
-def register_user(data: RegisterSchema):
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users WHERE username = %s;", (data.username,))
-        if cursor.fetchone():
-            cursor.close()
-            conn.close()
-            return {"status": "error", "message": "此帳號已被註冊！"}
-        
-        insert_query = """
-            INSERT INTO users (username, password_hash, name, email, role, region_code) 
-            VALUES (%s, %s, %s, %s, %s, 'TPE');
+    """)
+    cur.execute(
         """
-        cursor.execute(insert_query, (data.username, data.password, data.username, data.email or data.username, data.role or 'citizen'))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return {"status": "success", "message": "註冊成功！請重新登入。"}
-    except Exception as e:
-        if conn:
-            conn.rollback()
-            conn.close()
-        return {"status": "error", "message": f"註冊失敗: {str(e)}"}
-
-# 5. 會員登入 API
-@app.post("/api/login")
-def login_user(data: LoginSchema):
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT user_id, username, name, role FROM users WHERE username = %s AND password_hash = %s;", 
-            (data.username, data.password)
-        )
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if user:
-            display_name = user.get("name") or user.get("username")
-            return {
-                "status": "success", 
-                "message": "登入成功！", 
-                "username": display_name,
-                "role": user.get("role", "citizen")
-            }
-        else:
-            return {"status": "error", "message": "帳號或密碼錯誤！"}
-    except Exception as e:
-        if conn:
-            conn.close()
-        return {"status": "error", "message": str(e)}
+        INSERT INTO supplies_requests (user_account, user_name, district, item_name, quantity, contact_phone)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """,
+        (data.account, data.name, data.district, data.item_name, data.quantity, data.contact_phone)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "success", "message": "物資申請已送出至社區端"}
