@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water"></i> 淹水風險與即時情資</a>
+      <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action active"><i class="bi bi-shield-check"></i> 預警避難與路線導航</a>
+      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action"><i class="bi bi-megaphone"></i> 線上通報與物資申請</a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="fw-bold mb-3"><i class="bi bi-bell text-warning"></i> 警戒與避難判斷流程</h4>
+      <div class="alert alert-info d-flex align-items-center gap-3" id="alert-status-box">
+        <i class="bi bi-geo-alt-fill fs-2"></i>
+        <div>
+          <h5 class="alert-heading mb-1">您所在的區域：{{ session.get('district') }}</h5>
+          <p class="mb-0" id="evac-status-text">系統持續監測雨量中...</p>
+        </div>
+      </div>
+
+      <h5 class="fw-bold mt-3"><i class="bi bi-map"></i> 最佳避難路線推薦</h5>
+      <div class="p-3 bg-light rounded border mb-3" id="route-box">
+        <p class="fw-semibold text-primary mb-1">📍 建議避難收容所：{{ session.get('district') }}運動中心 / 防災活動中心</p>
+        <p class="text-muted mb-0">路線導航：避開低窪地下道與河堤涵洞，建議循主要幹道步行至指定避難處所。</p>
+      </div>
+      <button class="btn btn-danger w-100 py-2" id="btn-trigger-alarm"><i class="bi bi-broadcast"></i> 模擬發送即時避難廣播與導航指引</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/warning_evac.js') }}"></script>
+{% endblock %}

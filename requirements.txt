@@ -3,3 +3,5 @@ uvicorn
 psycopg2-binary
 pydantic
 jinja2
+Flask
+gunicorn

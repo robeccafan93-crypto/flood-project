@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water"></i> 災情資訊模組</a>
+      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action active"><i class="bi bi-coin"></i> 補助資源模組</a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card shadow-sm p-4">
+      <h4 class="fw-bold mb-3"><i class="bi bi-journal-bookmark-fill text-success"></i> 補助資源模組 — 淹水救助與防汛設施補助</h4>
+      <p class="text-muted">提供民眾與社區申請政府災後救助金、防水閘門裝設補助及修繕支援。</p>
+
+      <div class="row g-4 mt-1">
+        <div class="col-md-6">
+          <div class="p-3 border rounded h-100 bg-light">
+            <h5 class="fw-bold text-primary"><i class="bi bi-houses"></i> 民眾住家淹水救助金</h5>
+            <ul class="text-muted small">
+              <li><strong>申請資格：</strong>住家淹水達 50 公分以上之現住戶。</li>
+              <li><strong>補助金額：</strong>每戶最高補助 NT$ 20,000 元。</li>
+              <li><strong>必備文件：</strong>里長證明、現場受災照片、戶籍謄本。</li>
+            </ul>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="alert('已下載民眾淹水救助申請表單！')">下載申請表單</button>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="p-3 border rounded h-100 bg-light">
+            <h5 class="fw-bold text-success"><i class="bi bi-building-check"></i> 社區大樓防水閘門補助</h5>
+            <ul class="text-muted small">
+              <li><strong>申請資格：</strong>臺北市合法立案之公寓大廈管理委員會。</li>
+              <li><strong>補助金額：</strong>依閘門寬度補助 40% ~ 50% 裝設費用。</li>
+              <li><strong>必備文件：</strong>管委會申請書、工程估價單、現場施作圖。</li>
+            </ul>
+            <button class="btn btn-sm btn-outline-success mt-2" onclick="alert('已下載管委會專用補助方案！')">下載社區補助指南</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

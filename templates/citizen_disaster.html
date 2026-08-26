@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <!-- 側邊欄 -->
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action active"><i class="bi bi-water"></i> 淹水風險與即時情資</a>
+      <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action"><i class="bi bi-shield-check"></i> 預警避難與路線導航</a>
+      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action"><i class="bi bi-megaphone"></i> 線上通報與物資申請</a>
+    </div>
+  </div>
+
+  <!-- 主內容 -->
+  <div class="col-md-9">
+    <div class="card shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0"><i class="bi bi-cloud-lightning-rain text-primary"></i> 臺北市區域水文與淹水即時情資</h4>
+        <div class="input-group w-50">
+          <input type="text" id="keyword-input" class="form-control" placeholder="輸入關鍵字 (如: 北投、士林)...">
+          <button class="btn btn-outline-primary" id="btn-search"><i class="bi bi-search"></i> 查詢</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>編號</th>
+              <th>行政區域</th>
+              <th>區域代碼</th>
+              <th>累積雨量 (mm)</th>
+              <th>淹水風險預測</th>
+            </tr>
+          </thead>
+          <tbody id="disaster-table-body">
+            <tr><td colspan="5" class="text-center">正在連線資料庫讀取中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/disaster_info.js') }}"></script>
+{% endblock %}

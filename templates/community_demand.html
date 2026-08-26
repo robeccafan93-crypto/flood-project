@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam"></i> 志工/物資/設備管理</a>
+      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action active"><i class="bi bi-arrow-left-right"></i> 需求協作與調度</a>
+      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-cash-coin"></i> 補助資源專區</a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="fw-bold mb-3"><i class="bi bi-shuffle text-warning"></i> 需求協作模組 — 跨社區互助與調度流程</h4>
+      
+      <!-- 提交需求表單 -->
+      <form id="form-demand" class="p-3 bg-light rounded border mb-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">社區名稱</label>
+            <input type="text" class="form-control" id="comm-name" value="{{ session.get('district') }}聯合防災會" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">需求分類</label>
+            <select class="form-select" id="demand-cat">
+              <option value="志工需求">志工需求</option>
+              <option value="物資需求">物資需求</option>
+              <option value="設備需求">設備需求</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">資源來源</label>
+            <select class="form-select" id="source-type">
+              <option value="社區互助">社區互助 (鄰近社區調度)</option>
+              <option value="合作機構">合作機構 (市府/民間團體)</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">所需項目名稱</label>
+            <input type="text" class="form-control" id="demand-item" placeholder="例: 大型移動式抽水泵 / 沙包 50 包" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">需求數量</label>
+            <input type="number" class="form-control" id="demand-qty" value="5" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning mt-3 px-4 fw-semibold">送出調度申請 (啟動資源派送流程)</button>
+      </form>
+
+      <!-- 調度進度清單 -->
+      <h5 class="fw-bold"><i class="bi bi-clock-history"></i> 當前資源調度與送達狀態</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>申請社區</th>
+              <th>分類</th>
+              <th>調度項目</th>
+              <th>數量</th>
+              <th>資源來源</th>
+              <th>處理進度</th>
+            </tr>
+          </thead>
+          <tbody id="demand-table-body">
+            <tr><td colspan="6" class="text-center">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/demand_collab.js') }}"></script>
+{% endblock %}

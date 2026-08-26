@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white pb-0 border-0">
+        <ul class="nav nav-tabs card-header-tabs" id="authTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#loginTab">會員登入</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#registerTab">註冊新帳號</button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card-body p-4 tab-content">
+        <!-- 登入表單 -->
+        <div class="tab-pane fade show active" id="loginTab">
+          <form method="POST" action="{{ url_for('auth') }}">
+            <input type="hidden" name="action" value="login">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">帳號 (或電子郵件)</label>
+              <input type="text" name="account" class="form-control" placeholder="輸入帳號" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">密碼</label>
+              <input type="password" name="password" class="form-control" placeholder="輸入密碼" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">登入系統</button>
+          </form>
+        </div>
+
+        <!-- 註冊表單 -->
+        <div class="tab-pane fade" id="registerTab">
+          <form method="POST" action="{{ url_for('auth') }}">
+            <input type="hidden" name="action" value="register">
+            <div class="mb-2">
+              <label class="form-label fw-semibold">使用者帳號</label>
+              <input type="text" name="account" class="form-control" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold">登入密碼</label>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold">真實姓名</label>
+              <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold">聯絡電話</label>
+              <input type="tel" name="phone" class="form-control" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold">電子郵件</label>
+              <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold">身分選擇</label>
+              <select name="role" class="form-select">
+                <option value="民眾">民眾 (僅可瀏覽民眾端)</option>
+                <option value="社區">社區 (可瀏覽民眾與社區端)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">所屬行政區</label>
+              <select name="district" class="form-select">
+                <option value="北投區">北投區</option><option value="士林區">士林區</option>
+                <option value="中山區">中山區</option><option value="內湖區">內湖區</option>
+                <option value="大同區">大同區</option><option value="松山區">松山區</option>
+                <option value="萬華區">萬華區</option><option value="中正區">中正區</option>
+                <option value="大安區">大安區</option><option value="信義區">信義區</option>
+                <option value="南港區">南港區</option><option value="文山區">文山區</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2">確認並送出註冊</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

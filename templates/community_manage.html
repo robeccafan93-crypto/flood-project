@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action active"><i class="bi bi-box-seam"></i> 志工/物資/設備管理</a>
+      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action"><i class="bi bi-arrow-left-right"></i> 需求協作與調度</a>
+      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-cash-coin"></i> 補助資源專區</a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="fw-bold mb-3"><i class="bi bi-database-fill-gear text-primary"></i> 社區管理模組 — 資源庫存與志工設備維護</h4>
+      
+      <!-- 新增資源表單 -->
+      <form id="form-add-resource" class="row g-3 p-3 bg-light rounded border mb-4">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">管理項目分類</label>
+          <select class="form-select" id="res-type">
+            <option value="志工管理">志工人力</option>
+            <option value="物資管理">防汛物資</option>
+            <option value="設備管理">救災設備</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">項目名稱</label>
+          <input type="text" class="form-control" id="res-name" placeholder="例如: 支援志工 / 抽水機" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">存放/服務地點</label>
+          <input type="text" class="form-control" id="res-loc" value="{{ session.get('district') }}社區站" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">數量</label>
+          <input type="number" class="form-control" id="res-qty" value="10" required>
+        </div>
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary px-4">新增至資料庫</button>
+        </div>
+      </form>
+
+      <!-- 資源清單表格 -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>分類</th>
+              <th>項目名稱</th>
+              <th>地點/據點</th>
+              <th>數量</th>
+              <th>狀態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="resource-table-body">
+            <tr><td colspan="6" class="text-center">讀取中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/community_manage.js') }}"></script>
+{% endblock %}

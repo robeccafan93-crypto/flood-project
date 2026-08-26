@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <div class="list-group sidebar-menu shadow-sm">
+      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water"></i> 淹水風險與即時情資</a>
+      <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action"><i class="bi bi-shield-check"></i> 預警避難與路線導航</a>
+      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone"></i> 線上通報與物資申請</a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <!-- 1. 災情通報 -->
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="fw-bold mb-3 text-danger"><i class="bi bi-camera-fill"></i> 即時災情線上通報 (回報與審核流程)</h4>
+      <form id="form-disaster-report">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">所屬區域</label>
+            <input type="text" class="form-control" id="report-district" value="{{ session.get('district') }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">災情嚴重程度</label>
+            <select class="form-select" id="report-severity">
+              <option value="輕微">輕微 (路面輕微積水)</option>
+              <option value="嚴重">嚴重 (積水超過輪胎/人員受困)</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">災害狀況詳細描述</label>
+            <textarea class="form-control" id="report-desc" rows="3" placeholder="請填寫地點與受困狀況..." required></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-danger mt-3 px-4">送出通報 (進入通報審查)</button>
+      </form>
+    </div>
+
+    <!-- 2. 民眾需求申請 (向社區端窗口) -->
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="fw-bold mb-3 text-success"><i class="bi bi-box-seam-fill"></i> 民眾需求申請 (防汛物資申請)</h4>
+      <form id="form-supply-req">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">申請項目</label>
+            <select class="form-select" id="req-item">
+              <option value="防汛沙包 (包)">防汛沙包 (包)</option>
+              <option value="小型抽水機 (台)">小型抽水機 (台)</option>
+              <option value="緊急救生圈/衣">緊急救生圈/衣</option>
+              <option value="飲用水/乾糧物資包">飲用水/乾糧物資包</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">需求數量</label>
+            <input type="number" class="form-control" id="req-qty" value="5" min="1" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">聯絡電話</label>
+            <input type="tel" class="form-control" id="req-phone" placeholder="0912345678" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3 px-4">送出物資需求申請</button>
+      </form>
+    </div>
+
+    <!-- 3. 即時問答 (聊天機器人與留言板) -->
+    <div class="card shadow-sm p-4">
+      <h4 class="fw-bold mb-3 text-primary"><i class="bi bi-robot"></i> 24H 智慧防汛即時問答</h4>
+      <div class="chat-box mb-3" id="chat-messages">
+        <div class="chat-msg bot">您好！我是臺北市防汛智慧助理，請問有什麼水情或避難問題想詢問嗎？</div>
+      </div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="chat-input" placeholder="輸入問題 (例如：如何領取沙包？)...">
+        <button class="btn btn-primary" id="btn-chat-send">送出提問</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/service_interactive.js') }}"></script>
+{% endblock %}
