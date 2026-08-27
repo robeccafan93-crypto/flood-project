@@ -2,77 +2,174 @@
 
 {% block content %}
 <div class="row">
+  <!-- 側邊選單 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
       <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water"></i> 淹水風險與即時情資</a>
       <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action"><i class="bi bi-shield-check"></i> 預警避難與路線導航</a>
-      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone"></i> 線上通報與物資申請</a>
+      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone"></i> 線上通報與服務互動</a>
     </div>
   </div>
 
+  <!-- 主內容 -->
   <div class="col-md-9">
-    <!-- 1. 災情通報 -->
-    <div class="card shadow-sm p-4 mb-4">
-      <h4 class="fw-bold mb-3 text-danger"><i class="bi bi-camera-fill"></i> 即時災情線上通報 (回報與審核流程)</h4>
-      <form id="form-disaster-report">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">所屬區域</label>
-            <input type="text" class="form-control" id="report-district" value="{{ session.get('district') }}" required>
+    <!-- 頁籤切換 -->
+    <ul class="nav nav-pills mb-4 gap-2">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" id="tab-supply" data-bs-toggle="pill" data-bs-target="#panel-supply">
+          <i class="bi bi-box-seam me-1"></i> 民眾需求申請與進度
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" id="tab-report" data-bs-toggle="pill" data-bs-target="#panel-report">
+          <i class="bi bi-camera me-1"></i> 災情即時通報
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" id="tab-qa" data-bs-toggle="pill" data-bs-target="#panel-qa">
+          <i class="bi bi-robot me-1"></i> 24H 智慧防汛問答
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      
+      <!-- 模組 1: 民眾需求申請 (含圖一進度條) -->
+      <div class="tab-pane fade show active" id="panel-supply">
+        
+        <!-- 即時進度追蹤看板 (圖一效果) -->
+        <div class="pro-card p-4 mb-4 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-truck text-primary me-2"></i>最新物資調度與配送進度條</h5>
+            <span class="badge bg-success px-3 py-2" id="current-step-badge">進度：社區備料揀貨中</span>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">災情嚴重程度</label>
-            <select class="form-select" id="report-severity">
-              <option value="輕微">輕微 (路面輕微積水)</option>
-              <option value="嚴重">嚴重 (積水超過輪胎/人員受困)</option>
-            </select>
+          <small class="text-muted">即時監控由社區防災會或區公所調度派送之防汛物資運送流程。</small>
+
+          <!-- 圖一進度條容器 -->
+          <div class="stepper-container">
+            <div class="stepper-wrapper">
+              <div class="stepper-progress-line" id="stepperLine" style="width: 33%;"></div>
+              
+              <!-- 步驟 1: 收到訂單 -->
+              <div class="step-item completed" id="step-1">
+                <div class="step-circle">
+                  <i class="bi bi-file-earmark-text"></i>
+                  <span>收到申請</span>
+                </div>
+              </div>
+
+              <!-- 步驟 2: 揀貨中 -->
+              <div class="step-item active" id="step-2">
+                <div class="step-circle">
+                  <i class="bi bi-box"></i>
+                  <span>揀貨備料</span>
+                </div>
+              </div>
+
+              <!-- 步驟 3: 出貨 -->
+              <div class="step-item" id="step-3">
+                <div class="step-circle">
+                  <i class="bi bi-truck"></i>
+                  <span>派送出貨</span>
+                </div>
+              </div>
+
+              <!-- 步驟 4: 送達 -->
+              <div class="step-item" id="step-4">
+                <div class="step-circle">
+                  <i class="bi bi-check-circle"></i>
+                  <span>送達簽收</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">災害狀況詳細描述</label>
-            <textarea class="form-control" id="report-desc" rows="3" placeholder="請填寫地點與受困狀況..." required></textarea>
+
+          <div class="p-3 bg-light rounded border text-secondary small d-flex justify-content-between align-items-center">
+            <div><i class="bi bi-info-circle-fill text-info me-1"></i> 目前申請項目：<strong>防汛沙包 10 包</strong> ｜ 配送目的地：<strong>{{ session.get('district', '大同區') }}</strong></div>
+            <div class="text-muted">預計 30 分鐘內抵達</div>
           </div>
         </div>
-        <button type="submit" class="btn btn-danger mt-3 px-4">送出通報 (進入通報審查)</button>
-      </form>
-    </div>
 
-    <!-- 2. 民眾需求申請 (向社區端窗口) -->
-    <div class="card shadow-sm p-4 mb-4">
-      <h4 class="fw-bold mb-3 text-success"><i class="bi bi-box-seam-fill"></i> 民眾需求申請 (防汛物資申請)</h4>
-      <form id="form-supply-req">
-        <div class="row g-3">
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">申請項目</label>
-            <select class="form-select" id="req-item">
-              <option value="防汛沙包 (包)">防汛沙包 (包)</option>
-              <option value="小型抽水機 (台)">小型抽水機 (台)</option>
-              <option value="緊急救生圈/衣">緊急救生圈/衣</option>
-              <option value="飲用水/乾糧物資包">飲用水/乾糧物資包</option>
-            </select>
+        <!-- 需求填寫表單 -->
+        <div class="pro-card p-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pencil-square text-primary me-2"></i>填寫防汛物資申請表</h5>
+          <form id="form-supply">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">申請人姓名</label>
+                <input type="text" class="form-control" value="{{ session.get('name', '民眾') }}" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">所屬行政區域</label>
+                <input type="text" class="form-control" value="{{ session.get('district', '大同區') }}" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">需求物資品項</label>
+                <select class="form-select" id="supply-item">
+                  <option value="防汛沙包">防汛沙包 (每份 10 包)</option>
+                  <option value="防水擋板">組合式防水擋板 (2 片)</option>
+                  <option value="急救防災包">家庭急救防災包 (1 組)</option>
+                  <option value="救生照明設備">強光防水手電筒 / 救生浮標</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">申請數量</label>
+                <input type="number" class="form-control" id="supply-qty" value="1" min="1" max="20" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">聯絡電話 (以利志工送達通知)</label>
+                <input type="tel" class="form-control" id="supply-phone" placeholder="例如: 0912-345-678" required>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                <i class="bi bi-send-fill me-1"></i> 送出物資申請
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- 模組 2: 災情即時通報 -->
+      <div class="tab-pane fade" id="panel-report">
+        <div class="pro-card p-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera-fill text-danger me-2"></i>即時災情通報回報</h5>
+          <form id="form-disaster">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">通報行政區</label>
+              <select class="form-select" id="report-district">
+                <option value="大同區" selected>大同區</option>
+                <option value="士林區">士林區</option>
+                <option value="北投區">北投區</option>
+                <option value="中山區">中山區</option>
+                <option value="萬華區">萬華區</option>
+                <option value="中正區">中正區</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">現場災情詳細描述</label>
+              <textarea class="form-control" id="report-desc" rows="3" placeholder="請描述積淹水位置、水深約達腳踝/膝蓋等具體情況..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger px-4 py-2 fw-semibold"><i class="bi bi-upload me-1"></i> 送出通報案件</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 模組 3: 智慧問答 -->
+      <div class="tab-pane fade" id="panel-qa">
+        <div class="pro-card p-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-chat-dots-fill text-success me-2"></i>24H 智慧防汛即時諮詢</h5>
+          <div class="border rounded p-3 mb-3 bg-light" id="chat-box" style="height: 260px; overflow-y: auto;">
+            <div class="mb-2"><strong class="text-primary">🤖 防汛助手：</strong>您好！請問有關避難路線、沙包領取或水情資訊的問題嗎？</div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">需求數量</label>
-            <input type="number" class="form-control" id="req-qty" value="5" min="1" required>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">聯絡電話</label>
-            <input type="tel" class="form-control" id="req-phone" placeholder="0912345678" required>
+          <div class="input-group">
+            <input type="text" id="qa-input" class="form-control" placeholder="請輸入您的問題 (例如: 哪裡可以領沙包？)...">
+            <button class="btn btn-success px-4" id="btn-send-qa">發送</button>
           </div>
         </div>
-        <button type="submit" class="btn btn-success mt-3 px-4">送出物資需求申請</button>
-      </form>
-    </div>
+      </div>
 
-    <!-- 3. 即時問答 (聊天機器人與留言板) -->
-    <div class="card shadow-sm p-4">
-      <h4 class="fw-bold mb-3 text-primary"><i class="bi bi-robot"></i> 24H 智慧防汛即時問答</h4>
-      <div class="chat-box mb-3" id="chat-messages">
-        <div class="chat-msg bot">您好！我是臺北市防汛智慧助理，請問有什麼水情或避難問題想詢問嗎？</div>
-      </div>
-      <div class="input-group">
-        <input type="text" class="form-control" id="chat-input" placeholder="輸入問題 (例如：如何領取沙包？)...">
-        <button class="btn btn-primary" id="btn-chat-send">送出提問</button>
-      </div>
     </div>
   </div>
 </div>
