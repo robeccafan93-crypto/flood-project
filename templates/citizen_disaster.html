@@ -13,28 +13,55 @@
 
   <!-- 主內容 -->
   <div class="col-md-9">
-    <div class="card shadow-sm p-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold mb-0"><i class="bi bi-cloud-lightning-rain text-primary"></i> 臺北市區域水文與淹水即時情資</h4>
-        <div class="input-group w-50">
-          <input type="text" id="keyword-input" class="form-control" placeholder="輸入關鍵字 (如: 北投、士林)...">
-          <button class="btn btn-outline-primary" id="btn-search"><i class="bi bi-search"></i> 查詢</button>
+    <div class="pro-card p-4 shadow-sm">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div>
+          <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-cloud-rain-heavy text-primary me-2"></i>臺北市各行政區水文與淹水即時情資</h4>
+          <small class="text-muted"><i class="bi bi-database-check text-success"></i> 已即時連線彙整各區即時平均降雨與監測站情資</small>
+        </div>
+        <div class="input-group w-auto mt-2 mt-md-0">
+          <input type="text" id="keyword-input" class="form-control form-control-custom" placeholder="搜尋行政區 (如: 北投、士林)...">
+          <button class="btn btn-primary px-3" id="btn-search"><i class="bi bi-search"></i> 查詢</button>
         </div>
       </div>
 
+      <!-- 統計摘要看板 -->
+      <div class="row g-3 mb-4 text-center">
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded border">
+            <small class="text-muted fw-bold">已連線監測行政區</small>
+            <div class="fs-4 fw-bold text-dark" id="monitored-districts-count">載入中...</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded border">
+            <small class="text-muted fw-bold">全市最高觀測雨量</small>
+            <div class="fs-4 fw-bold text-danger" id="city-max-rain">0.000</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded border">
+            <small class="text-muted fw-bold">目前防汛警戒等級</small>
+            <div class="fs-4 fw-bold text-warning" id="city-alert-level">分析中</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 精緻彙整情資表格 -->
       <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
+        <table class="table table-hover align-middle table-custom">
+          <thead>
             <tr>
-              <th>編號</th>
+              <th>項次</th>
               <th>行政區域</th>
               <th>區域代碼</th>
-              <th>累積雨量 (mm)</th>
-              <th>淹水風險預測</th>
+              <th>平均累積雨量 (mm)</th>
+              <th>最高觀測雨量 (mm)</th>
+              <th>淹水風險研判</th>
             </tr>
           </thead>
           <tbody id="disaster-table-body">
-            <tr><td colspan="5" class="text-center">正在連線資料庫讀取中...</td></tr>
+            <tr><td colspan="6" class="text-center py-4 text-muted">連線 Neon 雲端資料庫讀取彙整中...</td></tr>
           </tbody>
         </table>
       </div>
