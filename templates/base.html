@@ -6,6 +6,8 @@
   <title>{% block title %}臺北市智慧淹水預警平台{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Leaflet 真實地圖樣式庫 -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
@@ -25,42 +27,41 @@
 
       <div class="collapse navbar-collapse" id="navMain">
         <ul class="navbar-nav me-auto gap-2">
-          <!-- 頁籤 1: 首頁 -->
           <li class="nav-item">
             <a class="nav-link nav-tab-link" href="{{ url_for('index') }}"><i class="bi bi-house-door me-1"></i> 首頁</a>
           </li>
 
           {% if session.get('username') %}
-            <!-- 頁籤 2: 民眾服務 (下拉選單) -->
+            <!-- 頁籤 2: 民眾服務 (乾淨純項目) -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                 <i class="bi bi-people me-1"></i> 民眾服務
               </a>
               <ul class="dropdown-menu dropdown-menu-custom shadow">
-                <li><a class="dropdown-item" href="{{ url_for('citizen_disaster') }}"><i class="bi bi-graph-up me-2 text-info"></i> 災情資訊</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('citizen_warning') }}"><i class="bi bi-shield-exclamation me-2 text-warning"></i> 預警避難</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('citizen_service') }}"><i class="bi bi-headset me-2 text-success"></i> 服務互動 (通報/物資/問答)</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('citizen_disaster') }}"><i class="bi bi-water me-2 text-info"></i> 災情資訊</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('citizen_warning') }}"><i class="bi bi-shield-check me-2 text-warning"></i> 預警避難</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('citizen_service') }}"><i class="bi bi-megaphone me-2 text-success"></i> 服務互動</a></li>
               </ul>
             </li>
 
-            <!-- 頁籤 3: 社區物資 (含補助資源，僅社區端登入可見) -->
+            <!-- 頁籤 3: 社區物資 (乾淨純項目) -->
             {% if session.get('role') == 'community' %}
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle text-warning" href="#" data-bs-toggle="dropdown">
                 <i class="bi bi-boxes me-1"></i> 社區物資
               </a>
               <ul class="dropdown-menu dropdown-menu-custom shadow">
-                <li><a class="dropdown-item" href="{{ url_for('community_manage') }}"><i class="bi bi-sliders me-2 text-warning"></i> 社區管理 (人/物/設)</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('community_demand') }}"><i class="bi bi-arrow-left-right me-2 text-primary"></i> 需求協作與調度</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('community_manage') }}"><i class="bi bi-box-seam me-2 text-warning"></i> 社區管理</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('community_demand') }}"><i class="bi bi-shuffle me-2 text-primary"></i> 需求協作</a></li>
                 <li><hr class="dropdown-divider border-secondary"></li>
-                <li><a class="dropdown-item" href="{{ url_for('subsidy_resource') }}"><i class="bi bi-coin me-2 text-warning"></i> 補助資源專區</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('subsidy_resource') }}"><i class="bi bi-coin me-2 text-warning"></i> 補助資源</a></li>
               </ul>
             </li>
             {% endif %}
           {% endif %}
         </ul>
 
-        <!-- 右側會員資訊 -->
+        <!-- 會員按鈕 -->
         <div class="d-flex align-items-center gap-3">
           {% if session.get('username') %}
             <button class="btn btn-outline-light rounded-pill px-3 py-1 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
@@ -80,25 +81,12 @@
     </div>
   </nav>
 
-  <!-- Flash 訊息 -->
-  <div class="container mt-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-  </div>
-
+  <!-- 主內容容器 -->
   <main class="container my-4">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- 會員資料彈窗 -->
+  <!-- 個人資料彈窗 (包含可編輯技能項目) -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -135,9 +123,41 @@
                 {% endfor %}
               </select>
             </div>
+
+            <!-- 可修改之專長技能 (人機物管理核心) -->
+            <div class="mb-3 p-3 bg-light rounded border">
+              <label class="form-label text-dark small fw-bold d-block mb-2">志工專業技能設定</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="醫療急救" id="ps1" disabled checked>
+                    <label class="form-check-label small" for="ps1">醫療急救 / 護理</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="水電檢修" id="ps2" disabled checked>
+                    <label class="form-check-label small" for="ps2">水電維修 / 配管</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="機具抽水操作" id="ps3" disabled>
+                    <label class="form-check-label small" for="ps3">抽水泵浦機具操作</label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="物資車輛調配" id="ps4" disabled>
+                    <label class="form-check-label small" for="ps4">物資配送與車輛駕駛</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
               <button type="button" class="btn btn-outline-secondary" id="btn-enable-edit">
-                <i class="bi bi-pencil-square"></i> 設定 / 編輯
+                <i class="bi bi-pencil-square"></i> 設定 / 編輯資料
               </button>
               <button type="submit" class="btn btn-primary d-none" id="btn-save-profile">
                 <i class="bi bi-check-lg"></i> 儲存修改
@@ -170,7 +190,7 @@
       });
       const data = await res.json();
       if (data.status === 'success') {
-        alert(data.message);
+        alert("資料與技能專長已成功更新並同步至資料庫！");
         location.reload();
       } else {
         alert(data.message || '更新失敗');
@@ -184,6 +204,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Leaflet 真實地圖核心 JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

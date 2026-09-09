@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row justify-content-center my-4">
-  <div class="col-md-6 col-lg-5">
+  <div class="col-md-7 col-lg-6">
     
     <!-- 1. 會員登入卡片 -->
     <div class="auth-classic-card p-4" id="loginBox">
@@ -23,10 +23,8 @@
           <input type="password" name="password" class="form-control form-control-custom" placeholder="輸入密碼" required>
         </div>
 
-        <!-- 登入系統按鈕 (顯眼大藍底) -->
-        <button type="submit" class="btn btn-primary w-100 py-2 fs-6 fw-bold my-3 shadow-sm" style="background-color: #0d6efd; border-radius: 8px;">登入系統</button>
+        <button type="submit" class="btn btn-primary w-100 py-2 fs-6 fw-bold my-3 shadow-sm">登入系統</button>
 
-        <!-- 下方文字連結 -->
         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
           <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold" id="toRegisterBtn">註冊新帳號</a>
           <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold" onclick="alert('請聯繫管理員或至信箱重置密碼。')">忘記密碼</a>
@@ -34,34 +32,38 @@
       </form>
     </div>
 
-    <!-- 2. 註冊新帳號卡片 (預設隱藏) -->
+    <!-- 2. 註冊新帳號卡片 (含志工意願與人機物技能勾選) -->
     <div class="auth-classic-card p-4 d-none" id="registerBox">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="auth-tab-btn">註冊新帳號</span>
+        <span class="auth-tab-btn">註冊新帳號與志工登錄</span>
         <button type="button" class="btn-close" id="toLoginBtn"></button>
       </div>
 
       <form method="POST" action="{{ url_for('auth') }}" id="registerForm">
         <input type="hidden" name="action" value="register">
 
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-dark">帳號</label>
-          <input type="text" name="account" class="form-control form-control-custom" placeholder="請設定帳號" required>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">帳號</label>
+            <input type="text" name="account" class="form-control form-control-custom" placeholder="請設定帳號" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">密碼</label>
+            <input type="password" name="password" class="form-control form-control-custom" placeholder="請設定密碼" required>
+          </div>
         </div>
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-dark">密碼</label>
-          <input type="password" name="password" class="form-control form-control-custom" placeholder="請設定密碼" required>
+
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">真實姓名</label>
+            <input type="text" name="name" class="form-control form-control-custom" placeholder="例如: 王小明" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">聯絡電話</label>
+            <input type="tel" name="phone" class="form-control form-control-custom" placeholder="例如: 0912345678" required>
+          </div>
         </div>
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-dark">真實姓名</label>
-          <input type="text" name="name" class="form-control form-control-custom" placeholder="請輸入姓名" required>
-        </div>
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-dark">聯絡電話</label>
-          <input type="tel" name="phone" class="form-control form-control-custom" placeholder="例如: 0912345678" required>
-        </div>
-        
-        <!-- 電子郵件與驗證碼 -->
+
         <div class="mb-2">
           <label class="form-label fw-bold small text-dark">電子郵件</label>
           <div class="input-group">
@@ -75,28 +77,65 @@
           <input type="text" id="inputCode" class="form-control form-control-custom border-success" placeholder="請輸入 4 位數驗證碼">
         </div>
 
-        <div class="mb-2">
-          <label class="form-label fw-bold small text-dark">身分選擇</label>
-          <select name="role" class="form-select form-control-custom">
-            <option value="民眾">民眾</option>
-            <option value="社區">社區</option>
-          </select>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">身分選擇</label>
+            <select name="role" class="form-select form-control-custom">
+              <option value="民眾">民眾</option>
+              <option value="社區">社區</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-dark">所屬行政區</label>
+            <select name="district" class="form-select form-control-custom">
+              <option value="北投區">北投區</option><option value="士林區">士林區</option>
+              <option value="中山區">中山區</option><option value="內湖區">內湖區</option>
+              <option value="大同區" selected>大同區</option><option value="松山區">松山區</option>
+              <option value="萬華區">萬華區</option><option value="中正區">中正區</option>
+              <option value="大安區">大安區</option><option value="信義區">信義區</option>
+              <option value="南港區">南港區</option><option value="文山區">文山區</option>
+            </select>
+          </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-bold small text-dark">所屬行政區</label>
-          <select name="district" class="form-select form-control-custom">
-            <option value="北投區">北投區</option><option value="士林區">士林區</option>
-            <option value="中山區">中山區</option><option value="內湖區">內湖區</option>
-            <option value="大同區" selected>大同區</option><option value="松山區">松山區</option>
-            <option value="萬華區">萬華區</option><option value="中正區">中正區</option>
-            <option value="大安區">大安區</option><option value="信義區">信義區</option>
-            <option value="南港區">南港區</option><option value="文山區">文山區</option>
-          </select>
+        <!-- 志工意願與技能勾選 (老師指定重點) -->
+        <div class="p-3 bg-light rounded border mb-3">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="isVolunteer" name="is_volunteer" value="yes">
+            <label class="form-check-label fw-bold text-primary" for="isVolunteer">願意擔任社區防汛互助志工（平時與緊急調度人力）</label>
+          </div>
+          <div id="skillsSection" class="d-none mt-2">
+            <label class="form-label fw-bold small text-secondary">專長技能項目（可複選，以利人機物智能媒合）：</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="skills" value="醫療急救" id="s1">
+                  <label class="form-check-label small" for="s1">醫療急救 / 護理</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="skills" value="水電檢修" id="s2">
+                  <label class="form-check-label small" for="s2">水電維修 / 配管</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="skills" value="機具抽水操作" id="s3">
+                  <label class="form-check-label small" for="s3">機具操作 / 抽水泵浦</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="skills" value="物資車輛調配" id="s4">
+                  <label class="form-check-label small" for="s4">車輛駕駛 / 物資調配</label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 註冊送出按鈕 (顯眼綠底按鈕) -->
-        <button type="submit" class="btn btn-success w-100 py-2 fs-6 fw-bold my-2 shadow-sm" id="btnSubmitRegister" style="border-radius: 8px;">確認送出註冊</button>
+        <button type="submit" class="btn btn-success w-100 py-2 fs-6 fw-bold my-2 shadow-sm" id="btnSubmitRegister">確認送出註冊</button>
 
         <div class="text-center mt-2">
           <a href="javascript:void(0)" class="text-secondary text-decoration-none small" id="backToLoginText">已有帳號？返回登入</a>
@@ -110,22 +149,23 @@
 <script>
   const loginBox = document.getElementById('loginBox');
   const registerBox = document.getElementById('registerBox');
-  const toRegisterBtn = document.getElementById('toRegisterBtn');
-  const toLoginBtn = document.getElementById('toLoginBtn');
-  const backToLoginText = document.getElementById('backToLoginText');
-
-  toRegisterBtn.addEventListener('click', () => {
+  document.getElementById('toRegisterBtn').addEventListener('click', () => {
     loginBox.classList.add('d-none');
     registerBox.classList.remove('d-none');
   });
-
   function showLogin() {
     registerBox.classList.add('d-none');
     loginBox.classList.remove('d-none');
   }
+  document.getElementById('toLoginBtn').addEventListener('click', showLogin);
+  document.getElementById('backToLoginText').addEventListener('click', showLogin);
 
-  toLoginBtn.addEventListener('click', showLogin);
-  backToLoginText.addEventListener('click', showLogin);
+  // 志工技能連動開關
+  document.getElementById('isVolunteer').addEventListener('change', function() {
+    const sec = document.getElementById('skillsSection');
+    if (this.checked) sec.classList.remove('d-none');
+    else sec.classList.add('d-none');
+  });
 
   // 驗證碼邏輯
   let isCodeSent = false;
@@ -136,7 +176,7 @@
       return;
     }
     document.getElementById('codeSection').classList.remove('d-none');
-    alert(`驗證碼已發送至 ${email}！（測試模擬驗證碼為：8888）`);
+    alert(`驗證碼已寄發至 ${email}！（測試模擬驗證碼為：8888）`);
     isCodeSent = true;
   });
 
@@ -145,7 +185,7 @@
       const code = document.getElementById('inputCode').value.trim();
       if (code !== '8888') {
         e.preventDefault();
-        alert('驗證碼輸入錯誤，請輸入 8888！');
+        alert('驗證碼輸入錯誤，請填入 8888！');
       }
     }
   });

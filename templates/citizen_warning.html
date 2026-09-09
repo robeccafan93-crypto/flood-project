@@ -2,36 +2,123 @@
 
 {% block content %}
 <div class="row">
+  <!-- 側邊欄三層式 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
-      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water"></i> 淹水風險與即時情資</a>
-      <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action active"><i class="bi bi-shield-check"></i> 預警避難與路線導航</a>
-      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action"><i class="bi bi-megaphone"></i> 線上通報與物資申請</a>
+      <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action"><i class="bi bi-water me-2"></i>災情資訊</a>
+      <a href="{{ url_for('citizen_warning') }}" class="list-group-item list-group-item-action active"><i class="bi bi-shield-check me-2"></i>預警避難</a>
+      <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action"><i class="bi bi-megaphone me-2"></i>服務互動</a>
     </div>
   </div>
 
+  <!-- 主內容 -->
   <div class="col-md-9">
-    <div class="card shadow-sm p-4 mb-4">
-      <h4 class="fw-bold mb-3"><i class="bi bi-bell text-warning"></i> 警戒與避難判斷流程</h4>
-      <div class="alert alert-info d-flex align-items-center gap-3" id="alert-status-box">
-        <i class="bi bi-geo-alt-fill fs-2"></i>
+    <div class="pro-card p-4 shadow-sm mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
         <div>
-          <h5 class="alert-heading mb-1">您所在的區域：{{ session.get('district') }}</h5>
-          <p class="mb-0" id="evac-status-text">系統持續監測雨量中...</p>
+          <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-geo-alt-fill text-primary me-2"></i>避難收容處所地圖與路線導航</h4>
+          <small class="text-muted">已取得目前位置，最近：<strong>大安國中避難收容所</strong> (即時避開淹水路段)</small>
         </div>
+        <button class="btn btn-outline-primary btn-sm" onclick="locateUserAndRoute()">
+          <i class="bi bi-arrow-repeat"></i> 重新整理當前定位
+        </button>
       </div>
 
-      <h5 class="fw-bold mt-3"><i class="bi bi-map"></i> 最佳避難路線推薦</h5>
-      <div class="p-3 bg-light rounded border mb-3" id="route-box">
-        <p class="fw-semibold text-primary mb-1">📍 建議避難收容所：{{ session.get('district') }}運動中心 / 防災活動中心</p>
-        <p class="text-muted mb-0">路線導航：避開低窪地下道與河堤涵洞，建議循主要幹道步行至指定避難處所。</p>
+      <!-- 真實地圖展示容器 (完全比照參考圖) -->
+      <div id="evacuation-map" style="height: 420px; width: 100%; border-radius: 12px;" class="shadow-sm border"></div>
+      
+      <!-- 圖例 (比照圖樣：低、注意、偏高、嚴重) -->
+      <div class="d-flex align-items-center gap-3 mt-3 p-2 bg-light rounded border small">
+        <span class="fw-bold text-dark"><i class="bi bi-diamond-fill text-primary"></i> 點選色塊查看各區淹水嚴重程度：</span>
+        <span><span class="badge" style="background:#10b981;">●</span> 低</span>
+        <span><span class="badge" style="background:#f59e0b;">●</span> 注意</span>
+        <span><span class="badge" style="background:#f97316;">●</span> 偏高</span>
+        <span><span class="badge" style="background:#ef4444;">●</span> 嚴重</span>
       </div>
-      <button class="btn btn-danger w-100 py-2" id="btn-trigger-alarm"><i class="bi bi-broadcast"></i> 模擬發送即時避難廣播與導航指引</button>
+    </div>
+
+    <!-- 避難處所列表 -->
+    <div class="pro-card p-4 shadow-sm">
+      <h5 class="fw-bold text-dark mb-3"><i class="bi bi-list-check text-primary me-2"></i>鄰近防汛避難收容所名冊</h5>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle table-custom">
+          <thead>
+            <tr>
+              <th>收容所名稱</th>
+              <th>行政區域</th>
+              <th>詳細地址</th>
+              <th>最大容納</th>
+              <th>導航操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fw-bold text-dark">大安國中避難收容所</td>
+              <td>大安區</td>
+              <td>臺北市大安區大安路二段63號</td>
+              <td><span class="badge bg-primary">850 人</span></td>
+              <td><button class="btn btn-sm btn-success" onclick="focusShelter(25.0315, 121.5435, '大安國中避難收容所')"><i class="bi bi-cursor-fill me-1"></i>導航定位</button></td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-dark">大同運動中心 (備援中心)</td>
+              <td>大同區</td>
+              <td>臺北市大同區大龍街51號</td>
+              <td><span class="badge bg-primary">500 人</span></td>
+              <td><button class="btn btn-sm btn-success" onclick="focusShelter(25.0655, 121.5145, '大同運動中心')"><i class="bi bi-cursor-fill me-1"></i>導航定位</button></td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-dark">北投國小活動中心</td>
+              <td>北投區</td>
+              <td>臺北市北投區中央北路一段183號</td>
+              <td><span class="badge bg-primary">650 人</span></td>
+              <td><button class="btn btn-sm btn-success" onclick="focusShelter(25.1325, 121.4988, '北投國小活動中心')"><i class="bi bi-cursor-fill me-1"></i>導航定位</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/warning_evac.js') }}"></script>
+<script>
+let map;
+document.addEventListener("DOMContentLoaded", () => {
+  // 初始化 Leaflet 真實地圖 (以臺北市為中心)
+  map = L.map('evacuation-map').setView([25.0478, 121.5318], 12);
+
+  // 載入 OpenStreetMap 圖資
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap 貢獻者 | 臺北市防汛圖資'
+  }).addTo(map);
+
+  // 繪製與參考圖一致的多層淹水嚴重度警戒同心圓與色塊
+  L.circle([25.1200, 121.5000], { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.35, radius: 2800 }).addTo(map).bindPopup("<b>北投安全緩衝區</b>：淹水程度低");
+  L.circle([25.0600, 121.5300], { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.4, radius: 2200 }).addTo(map).bindPopup("<b>士林中山交界區</b>：淹水程度注意");
+  L.circle([25.0400, 121.5100], { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.45, radius: 2500 }).addTo(map).bindPopup("<b>大同中正交界區</b>：淹水程度偏高");
+  L.circle([25.0315, 121.5435], { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.45, radius: 1500 }).addTo(map).bindPopup("<b>大安低窪管制區</b>：淹水程度嚴重 (建議撤離)");
+
+  // 標記主要避難收容所
+  const shelters = [
+    { name: "大安國中避難收容所", lat: 25.0315, lng: 121.5435 },
+    { name: "大同運動中心", lat: 25.0655, lng: 121.5145 },
+    { name: "北投國小活動中心", lat: 25.1325, lng: 121.4988 }
+  ];
+
+  shelters.forEach(s => {
+    L.marker([s.lat, s.lng]).addTo(map).bindPopup(`<b>🏫 ${s.name}</b><br>容納人數充足，已開放避難登記。`);
+  });
+});
+
+function focusShelter(lat, lng, name) {
+  map.setView([lat, lng], 15);
+  L.popup().setLatLng([lat, lng]).setContent(`<b>📍 已設定安全導航目標：${name}</b><br>路徑已排除積水地下道。`).openOn(map);
+}
+
+function locateUserAndRoute() {
+  alert("定位已更新！系統已規劃避開大安低窪區的最佳安全疏散路徑至大安國中。");
+  map.setView([25.0315, 121.5435], 14);
+}
+</script>
 {% endblock %}
