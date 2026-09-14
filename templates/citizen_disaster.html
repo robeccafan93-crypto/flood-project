@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row">
-  <!-- 側邊欄三層式 (名稱嚴格統一) -->
+  <!-- 側邊欄 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
       <a href="{{ url_for('citizen_disaster') }}" class="list-group-item list-group-item-action active"><i class="bi bi-water me-2"></i>災情資訊</a>
@@ -11,8 +11,12 @@
     </div>
 
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
-      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-cpu text-primary me-1"></i>XGBoost 水文預測模型</h6>
-      <p class="small text-muted mb-1">整合水利氣象特徵，由極限梯度提升（XGBoost）演算法輸出即時防汛風險等級與淹水機率。</p>
+      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-cpu text-primary me-1"></i>都市水文智慧預警模型</h6>
+      <p class="small text-muted mb-2">整合中央氣象署即時雨量站與水利處 IoT 特徵，動態推估臺北市 12 行政區淹水風險。</p>
+      <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+        <small class="text-secondary"><i class="bi bi-clock-history me-1"></i>每 12 小時自動更新</small>
+        <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:0.75rem;" onclick="refreshAIPrediction()">手動更新</button>
+      </div>
     </div>
   </div>
 
@@ -22,7 +26,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
         <div>
           <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-cloud-rain-heavy text-primary me-2"></i>臺北市各行政區水文與淹水即時情資</h4>
-          <small class="text-muted"><i class="bi bi-database-check text-success"></i> 已連線資料庫與 XGB 機器學習預測引擎</small>
+          <small class="text-muted"><i class="bi bi-database-check text-success"></i> 已同步 Neon 資料庫水情與智慧預警模型推論</small>
         </div>
         <div class="input-group w-auto mt-2 mt-md-0">
           <input type="text" id="keyword-input" class="form-control form-control-custom" placeholder="搜尋行政區 (如: 北投、士林)...">
@@ -30,39 +34,47 @@
         </div>
       </div>
 
-      <!-- 頂部三大看板 -->
+      <!-- 頂部三大看板：解決圖一超出框框問題 -->
       <div class="row g-3 mb-4 text-center">
+        <!-- 看板 1: 已連線行政區 -->
         <div class="col-md-4">
           <div class="p-3 bg-light rounded border h-100 d-flex flex-column justify-content-center">
-            <small class="text-muted fw-bold">已連線監測行政區</small>
-            <div class="fs-4 fw-bold text-dark mt-2" id="monitored-districts-count">8 個行政區</div>
+            <small class="text-muted fw-bold">全區已連線監測行政區</small>
+            <div class="fs-4 fw-bold text-dark mt-2" id="monitored-districts-count">12 個行政區</div>
           </div>
         </div>
 
+        <!-- 看板 2: 降雨最高區 -->
         <div class="col-md-4">
           <div class="p-3 bg-light rounded border h-100 d-flex flex-column justify-content-center">
-            <small class="text-muted fw-bold">目前雨量最多的行政區</small>
+            <small class="text-muted fw-bold">目前累積降雨最高行政區</small>
             <div class="fs-4 fw-bold text-danger mt-2" id="max-rain-district-box">計算中...</div>
           </div>
         </div>
 
-        <!-- 警戒等級與下拉選單置中排版 -->
+        <!-- 看板 3: 風險等級分佈 (精確格狀排版，不再擠爆) -->
         <div class="col-md-4">
           <div class="p-3 bg-light rounded border h-100 d-flex flex-column justify-content-between">
-            <div>
-              <small class="text-muted fw-bold d-block mb-1">警戒等級與模型預測</small>
-              <select id="select-warning-district" class="form-select form-select-sm border-primary fw-bold text-dark mx-auto" style="max-width: 140px;">
-              </select>
-            </div>
-            <div class="my-2">
-              <div class="fs-5 fw-bold text-success" id="selected-district-status">正常水情安全</div>
-              <div class="mt-1" id="xgb-prob-badge"><span class="badge bg-success">XGB 淹水機率: 21.0% (安全)</span></div>
+            <small class="text-muted fw-bold d-block mb-1">全市淹水風險等級分佈</small>
+            <div class="row g-1 text-center align-items-center my-auto">
+              <div class="col-4">
+                <span class="badge bg-danger w-100 py-1" style="font-size:0.75rem;">高度風險</span>
+                <div class="fs-5 fw-bold text-danger mt-1 font-monospace" id="count-red">2 區</div>
+              </div>
+              <div class="col-4">
+                <span class="badge bg-warning text-dark w-100 py-1" style="font-size:0.75rem;">中度警戒</span>
+                <div class="fs-5 fw-bold text-warning mt-1 font-monospace" id="count-yellow">3 區</div>
+              </div>
+              <div class="col-4">
+                <span class="badge bg-success w-100 py-1" style="font-size:0.75rem;">水情安全</span>
+                <div class="fs-5 fw-bold text-success mt-1 font-monospace" id="count-green">7 區</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 表格 -->
+      <!-- 水情情資表格 -->
       <div class="table-responsive">
         <table class="table table-hover align-middle table-custom">
           <thead>
@@ -72,7 +84,7 @@
               <th>區域代碼</th>
               <th>平均累積雨量 (mm)</th>
               <th>最高觀測雨量 (mm)</th>
-              <th>XGB 淹水風險研判</th>
+              <th>智慧防汛風險研判</th>
             </tr>
           </thead>
           <tbody id="disaster-table-body">

@@ -6,14 +6,13 @@
   <title>{% block title %}臺北市智慧淹水預警平台{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Leaflet 真實地圖樣式庫 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-  <!-- 頂部三大書籤導航列 -->
+  <!-- 頂部導航列 -->
   <nav class="navbar navbar-expand-lg navbar-custom sticky-top py-2 px-4 shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-2 me-4" href="{{ url_for('index') }}">
@@ -32,7 +31,7 @@
           </li>
 
           {% if session.get('username') %}
-            <!-- 頁籤 2: 民眾服務 (乾淨純項目) -->
+            <!-- 民眾服務 -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                 <i class="bi bi-people me-1"></i> 民眾服務
@@ -44,7 +43,7 @@
               </ul>
             </li>
 
-            <!-- 頁籤 3: 社區物資 (乾淨純項目) -->
+            <!-- 社區物資 -->
             {% if session.get('role') == 'community' %}
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle text-warning" href="#" data-bs-toggle="dropdown">
@@ -61,10 +60,11 @@
           {% endif %}
         </ul>
 
-        <!-- 會員按鈕 -->
+        <!-- 會員頭像按鈕 -->
         <div class="d-flex align-items-center gap-3">
           {% if session.get('username') %}
-            <button class="btn btn-outline-light rounded-pill px-3 py-1 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
+            <!-- 點擊彈出個人檔案 Modal -->
+            <button class="btn btn-outline-light rounded-pill px-3 py-1 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal" title="點擊編輯個人資料">
               {% if session.get('role') == 'community' %}
                 <span class="badge bg-warning text-dark rounded-circle"><i class="bi bi-building"></i></span>
               {% else %}
@@ -81,16 +81,15 @@
     </div>
   </nav>
 
-  <!-- 主內容容器 -->
   <main class="container my-4">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- 個人資料彈窗 (包含可編輯技能項目) -->
+  <!-- 個人資料修改彈窗 (完整恢復) -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content pro-card border-0 shadow">
+      <div class="modal-content pro-card border-0 shadow-lg">
         <div class="modal-header bg-dark text-white">
           <h5 class="modal-title fw-bold">
             {% if session.get('role') == 'community' %}
@@ -124,9 +123,9 @@
               </select>
             </div>
 
-            <!-- 可修改之專長技能 (人機物管理核心) -->
+            <!-- 可修改技能項目 -->
             <div class="mb-3 p-3 bg-light rounded border">
-              <label class="form-label text-dark small fw-bold d-block mb-2">志工專業技能設定</label>
+              <label class="form-label text-dark small fw-bold d-block mb-2">志工專長技能項目設定</label>
               <div class="row g-2">
                 <div class="col-6">
                   <div class="form-check">
@@ -149,7 +148,7 @@
                 <div class="col-6">
                   <div class="form-check">
                     <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="物資車輛調配" id="ps4" disabled>
-                    <label class="form-check-label small" for="ps4">物資配送與車輛駕駛</label>
+                    <label class="form-check-label small" for="ps4">車輛駕駛 / 物資調配</label>
                   </div>
                 </div>
               </div>
@@ -190,7 +189,7 @@
       });
       const data = await res.json();
       if (data.status === 'success') {
-        alert("資料與技能專長已成功更新並同步至資料庫！");
+        alert("個人資料與專長技能已成功儲存並同步至資料庫！");
         location.reload();
       } else {
         alert(data.message || '更新失敗');
@@ -204,7 +203,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Leaflet 真實地圖核心 JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   {% block extra_js %}{% endblock %}
 </body>
