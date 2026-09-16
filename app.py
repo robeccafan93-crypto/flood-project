@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.parse
+from datetime import datetime
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
@@ -9,7 +10,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "flood_system_secret_key_2026")
 
-# Neon PostgreSQL 連線字串 (直連你的雲端資料庫)
+# Neon PostgreSQL 連線字串 (直連雲端資料庫)
 DB_CONNECTION_STRING = os.getenv(
     "DATABASE_URL",
     "postgresql://neondb_owner:npg_BbAq2rUeTQD9@ep-sweet-dawn-azygay6t-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -18,9 +19,35 @@ DB_CONNECTION_STRING = os.getenv(
 def get_db():
     return psycopg2.connect(DB_CONNECTION_STRING, cursor_factory=RealDictCursor)
 
+def generate_custom_order_no(cur, resource_type):
+    """
+    依照資源類型生成標準業務訂單編號：
+    HUM-YYYYMMDD-流水號 (人力)
+    EQP-YYYYMMDD-流水號 (機具)
+    MAT-YYYYMMDD-流水號 (物資)
+    """
+    raw_str = str(resource_type).strip().upper()
+    if "人" in raw_str or "HUM" in raw_str:
+        prefix = "HUM"
+    elif "機" in raw_str or "EQP" in raw_str:
+        prefix = "EQP"
+    else:
+        prefix = "MAT"
+
+    today_str = datetime.now().strftime("%Y%m%d")
+    search_pattern = f"{prefix}-{today_str}-%"
+
+    cur.execute(
+        "SELECT COUNT(*) AS count FROM supplies_requests WHERE order_no LIKE %s",
+        (search_pattern,)
+    )
+    result = cur.fetchone()
+    seq_num = (result["count"] if result else 0) + 1
+    return f"{prefix}-{today_str}-{seq_num:03d}"
+
 # ================= 頁面路由與權限控管 =================
 
-# 首頁 (任何人皆可瀏覽)
+# 首頁
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -51,18 +78,16 @@ def auth():
                     return redirect(url_for("auth"))
 
                 db_pwd = str(user.get("password_hash") or "")
-                # 密碼比對邏輯 (支援明文與預設管理員)
                 if db_pwd != password and not db_pwd.endswith(password):
                     if not (account.lower() == "admin" and password == "123456"):
                         flash("密碼錯誤，請重新輸入！", "danger")
                         return redirect(url_for("auth"))
 
-                # 寫入 Session
                 session["user_id"] = user["user_id"]
                 session["username"] = user["username"]
                 session["name"] = user.get("name") or user["username"]
                 session["role"] = "community" if str(user.get("role", "")).lower() in ["community", "社區", "admin"] else "citizen"
-                session["district"] = user.get("region_code") or "大同區"
+                session["district"] = user.get("region_code") or "中山區"
 
                 flash(f"歡迎登入，{session['name']}！", "success")
                 return redirect(url_for("citizen_disaster"))
@@ -72,7 +97,7 @@ def auth():
                 phone = request.form.get("phone", "").strip()
                 email = request.form.get("email", "").strip()
                 role = "community" if request.form.get("role") == "社區" else "citizen"
-                district = request.form.get("district", "大同區")
+                district = request.form.get("district", "中山區")
 
                 try:
                     cur.execute(
@@ -106,7 +131,7 @@ def logout():
     flash("您已安全登出系統。", "info")
     return redirect(url_for("index"))
 
-# --- 民眾服務 (需登入) ---
+# --- 民眾服務 ---
 
 @app.route("/citizen/disaster")
 def citizen_disaster():
@@ -126,7 +151,7 @@ def citizen_service():
         return redirect(url_for("auth"))
     return render_template("citizen_service.html")
 
-# --- 社區物資 (含補助資源，限社區端身分) ---
+# --- 社區物資 (限社區管理員權限) ---
 
 @app.route("/community/manage")
 def community_manage():
@@ -148,9 +173,9 @@ def subsidy_resource():
         return redirect(url_for("auth"))
     return render_template("subsidy_resource.html")
 
-# ================= REST API (直接對接現有資料表) =================
+# ================= REST API (直接對接 Neon 資料庫) =================
 
-# 1. 水情資料查詢：精準讀取 flood_summary 並依 12 行政區自動彙整
+# 1. 各行政區水情統計 API (讀取 flood_summary)
 @app.route("/api/flood-summary")
 def api_flood_summary():
     conn = None
@@ -171,7 +196,6 @@ def api_flood_summary():
             code = str(r.get("region_code") or "A").strip().upper()
             d_name = r.get("district") or r.get("district_name") or r.get("location") or ""
             
-            # 若資料庫 district 為空或填寫「臺北市」，依據代碼轉換為具體行政區
             if not d_name or "臺北" in d_name or "台北" in d_name:
                 d_name = region_map.get(code, f"監測區-{code}")
 
@@ -211,56 +235,101 @@ def api_flood_summary():
         if cur: cur.close()
         if conn: conn.close()
 
-# 2. 災情通報：寫入 disaster_reports 資料表
-@app.route("/api/disaster-report", methods=["POST"])
+# 2. 即時災情通報 API (符合 report_id 主鍵與 report_type 必填欄位)
+@app.route("/api/disaster-report", methods=["GET", "POST"])
 def api_disaster_report():
-    data = request.json or {}
     conn = None
     cur = None
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO disaster_reports (district, description)
-            VALUES (%s, %s)
-            """,
-            (data.get("district", "大同區"), data.get("description", ""))
-        )
-        conn.commit()
-        return jsonify({"status": "success", "message": "災情通報已成功送出！案件已進入審核流程。"})
-    except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if cur: cur.close()
-        if conn: conn.close()
 
-# 3. 民眾需求申請：寫入 supplies_requests 資料表
-@app.route("/api/supply-request", methods=["POST"])
-def api_supply_request():
-    data = request.json or {}
-    conn = None
-    cur = None
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO supplies_requests (user_account, user_name, district, item_name, quantity, contact_phone)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                session.get("username", "guest"),
-                session.get("name", "民眾"),
-                session.get("district", "大同區"),
-                data.get("item_name", "防汛沙包"),
-                int(data.get("quantity", 1)),
-                data.get("contact_phone", "")
+        if request.method == "POST":
+            data = request.json or {}
+            district = data.get("district", session.get("district", "中山區"))
+            location = data.get("location", "").strip()
+            description = data.get("description", "").strip()
+            image_url = data.get("image_url", "").strip()
+            report_type = data.get("report_type", "積淹水災情")
+
+            today_str = datetime.now().strftime("%Y%m%d")
+            try:
+                cur.execute("SELECT COUNT(*) AS count FROM disaster_reports WHERE report_no LIKE %s", (f"RPT-{today_str}-%",))
+                cnt_res = cur.fetchone()
+                seq = (cnt_res["count"] if cnt_res else 0) + 1
+            except Exception:
+                seq = 1
+            report_no = f"RPT-{today_str}-{seq:03d}"
+
+            cur.execute(
+                """
+                INSERT INTO disaster_reports (
+                    report_no, user_name, district, region_code, 
+                    location_description, description, report_type, 
+                    image_url, status, reported_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                RETURNING report_id
+                """,
+                (
+                    report_no,
+                    session.get("name", "王小明"),
+                    district,
+                    district,
+                    location,
+                    description,
+                    report_type,
+                    image_url,
+                    "通報受理"
+                )
             )
-        )
+            conn.commit()
+            return jsonify({
+                "status": "success",
+                "message": "災情通報已成功送出！",
+                "report_no": report_no
+            })
+
+        elif request.method == "GET":
+            cur.execute("""
+                SELECT report_id, 
+                       COALESCE(report_no, 'RPT-20260915-01') as report_no,
+                       COALESCE(user_name, '市民 王先生') as user_name,
+                       COALESCE(district, region_code, '大同區') as district,
+                       COALESCE(location_description, '斯文里') as location_description,
+                       description, image_url,
+                       COALESCE(status, '通報受理') as status,
+                       TO_CHAR(COALESCE(reported_at, NOW()), 'YYYY-MM-DD HH24:MI') as reported_at_str
+                FROM disaster_reports
+                ORDER BY report_id DESC LIMIT 15
+            """)
+            rows = cur.fetchall()
+            return jsonify({"status": "success", "data": rows})
+
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"[Disaster Report Error] {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+# 2-1. 社區端審核通報與派案更新狀態 API
+@app.route("/api/disaster-report/audit", methods=["POST"])
+def api_audit_disaster_report():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        data = request.json or {}
+        report_no = data.get("report_no")
+        action = data.get("action")
+        volunteer = data.get("volunteer", "張師傅 (水電專長)")
+
+        new_status = "派員現場" if action == "dispatch" else "已駁回"
+        cur.execute("UPDATE disaster_reports SET status = %s WHERE report_no = %s", (new_status, report_no))
         conn.commit()
-        return jsonify({"status": "success", "message": "物資申請已成功送出至社區端！"})
+        return jsonify({"status": "success", "message": f"案件 {report_no} 已派工給：{volunteer}"})
     except Exception as e:
         if conn: conn.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -268,7 +337,79 @@ def api_supply_request():
         if cur: cur.close()
         if conn: conn.close()
 
-# 4. 社區端物資管理：讀取/新增/刪除 supplies 資料表
+# 3. 人機物調度申請 API (支援標準編號生成與歷史查詢，寫入 supplies_requests)
+@app.route("/api/supply-request", methods=["GET", "POST"])
+def api_supply_request():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        if request.method == "POST":
+            data = request.json or {}
+            raw_type = str(data.get("resource_type") or data.get("type") or "物").strip()
+            
+            if "人" in raw_type or "HUM" in raw_type.upper():
+                prefix_val = "HUM"
+            elif "機" in raw_type or "EQP" in raw_type.upper():
+                prefix_val = "EQP"
+            else:
+                prefix_val = "MAT"
+
+            order_no = generate_custom_order_no(cur, prefix_val)
+
+            cur.execute(
+                """
+                INSERT INTO supplies_requests (
+                    order_no, resource_type, user_account, user_name, 
+                    district, item_name, quantity, contact_phone, status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, order_no, created_at
+                """,
+                (
+                    order_no,
+                    prefix_val,
+                    session.get("username", "guest"),
+                    session.get("name", "民眾"),
+                    session.get("district", "中山區"),
+                    data.get("item_name", "防汛物資"),
+                    int(data.get("quantity", 1)),
+                    data.get("contact_phone", ""),
+                    "收到申請"
+                )
+            )
+            created_row = cur.fetchone()
+            conn.commit()
+            return jsonify({
+                "status": "success", 
+                "message": "調度申請已成功建立！",
+                "order_no": created_row["order_no"],
+                "created_at": created_row["created_at"].strftime("%Y-%m-%d %H:%M") if created_row["created_at"] else ""
+            })
+
+        elif request.method == "GET":
+            cur.execute("""
+                SELECT id, order_no, resource_type, user_name, district, item_name, quantity, contact_phone, status, created_at
+                FROM supplies_requests
+                ORDER BY id DESC
+                LIMIT 50
+            """)
+            rows = cur.fetchall()
+            for r in rows:
+                if r.get("created_at"):
+                    r["created_at"] = r["created_at"].strftime("%Y-%m-%d %H:%M")
+            return jsonify({"status": "success", "data": rows})
+
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"[Supply Request API Error] {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+# 4. 社區端物資庫存管理 API (讀取 supplies 資料表)
 @app.route("/api/community-resources", methods=["GET", "POST", "DELETE"])
 def api_community_resources():
     conn = None
@@ -291,7 +432,7 @@ def api_community_resources():
                 (d.get("name"), d.get("location"), int(d.get("quantity", 1)), d.get("status", "充足"))
             )
             conn.commit()
-            return jsonify({"status": "success", "message": "物資項目已新增至 supplies 資料表！"})
+            return jsonify({"status": "success", "message": "物資項目已新增至資料庫！"})
 
         elif request.method == "DELETE":
             res_id = request.args.get("id")
@@ -313,12 +454,12 @@ def api_community_demands():
     return jsonify({
         "status": "success",
         "data": [
-            {"community_name": "明勝里社區防災會", "category": "設備需求", "item_name": "移動式抽水泵浦", "quantity": 2, "source_type": "合作機構", "status": "派送中"},
+            {"community_name": "明勝里社區防災會", "category": "機具需求", "item_name": "移動式抽水泵浦", "quantity": 2, "source_type": "合作機構", "status": "派送中"},
             {"community_name": "大同區聯合防汛會", "category": "物資需求", "item_name": "防汛沙包 100 包", "quantity": 100, "source_type": "社區互助", "status": "已送達"}
         ]
     })
 
-# 6. 即時防汛問答 API
+# 6. 即時防汛智慧問答 API
 @app.route("/api/qa-chat", methods=["POST"])
 def api_qa_chat():
     d = request.json or {}
@@ -330,7 +471,7 @@ def api_qa_chat():
         ans = "請前往預警避難模組查看當前行政區的最佳避難導航路徑與收容所位置。"
     return jsonify({"status": "success", "answer": ans})
 
-# 7. 會員資料修改 API
+# 7. 會員個人檔案與志工專長修改 API
 @app.route("/api/user-profile/update", methods=["POST"])
 def api_update_user_profile():
     if "user_id" not in session:
@@ -340,7 +481,7 @@ def api_update_user_profile():
     new_name = data.get("name", "").strip()
     new_username = data.get("username", "").strip()
     new_password = data.get("password", "").strip()
-    new_district = data.get("district", "大同區")
+    new_district = data.get("district", "中山區")
 
     conn = None
     cur = None
@@ -367,7 +508,7 @@ def api_update_user_profile():
         session["username"] = new_username
         session["district"] = new_district
 
-        return jsonify({"status": "success", "message": "會員資料已成功儲存並同步至資料庫！"})
+        return jsonify({"status": "success", "message": "會員資料已成功儲存！"})
     except Exception as e:
         if conn: conn.rollback()
         return jsonify({"status": "error", "message": f"更新失敗: {str(e)}"}), 500
@@ -375,7 +516,7 @@ def api_update_user_profile():
         if cur: cur.close()
         if conn: conn.close()
 
-# 8. 串接組員的 XGB 機器學習淹水風險預測 API (含雙軌容錯備援)
+# 8. 智慧水文淹水風險預測 API (含雙軌容錯備援)
 @app.route("/api/xgb-flood-risk")
 def api_xgb_flood_risk():
     district = request.args.get("district", "北投區")
@@ -387,12 +528,10 @@ def api_xgb_flood_risk():
         with urllib.request.urlopen(req, timeout=1.5) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode())
-                return jsonify({"status": "success", "data": data, "source": "xgb_live_model"})
+                return jsonify({"status": "success", "data": data, "source": "ai_live_model"})
     except Exception:
-        # 當組員 API 未啟動時自動啟用容錯備援，確保系統穩定
         pass
 
-    # 備援回傳格式 (與組員 API 規格 100% 相符)
     simulated_prob = 0.725 if district in ["北投區", "士林區", "松山區"] else 0.210
     will_flood = simulated_prob > 0.5
     fallback_data = {
@@ -402,7 +541,7 @@ def api_xgb_flood_risk():
             "year": 2026,
             "probability": simulated_prob,
             "willFlood": will_flood,
-            "riskLevel": "高風險警戒" if will_flood else "正常水情安全"
+            "riskLevel": "高度淹水風險" if will_flood else "正常水情安全"
         },
         "predictions": [
             {
@@ -411,12 +550,53 @@ def api_xgb_flood_risk():
                 "year": 2026,
                 "probability": simulated_prob,
                 "willFlood": will_flood,
-                "riskLevel": "高風險警戒" if will_flood else "正常水情安全"
+                "riskLevel": "高度淹水風險" if will_flood else "正常水情安全"
             }
         ],
-        "liveSignals": { "status": "simulated_xgb_fallback" }
+        "liveSignals": { "status": "simulated_ai_fallback" }
     }
-    return jsonify({"status": "success", "data": fallback_data, "source": "xgb_fallback_engine"})
+    return jsonify({"status": "success", "data": fallback_data, "source": "ai_fallback_engine"})
+
+# 9. 社區防汛留言板 API (直連 message_board 資料表)
+@app.route("/api/messages", methods=["GET", "POST"])
+def api_messages():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        if request.method == "POST":
+            d = request.json or {}
+            content = d.get("content", "").strip()
+            category = d.get("category", "即時路況")
+            tags = d.get("tags", "")
+            user_name = session.get("name", "熱心市民")
+            district = session.get("district", "中山區")
+
+            cur.execute("""
+                INSERT INTO message_board (user_name, district, category, content, tags)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_name, district, category, content, tags))
+            conn.commit()
+            return jsonify({"status": "success", "message": "留言已成功張貼至資料庫！"})
+
+        elif request.method == "GET":
+            cur.execute("""
+                SELECT id, user_name, district, category, content, tags, 
+                       to_char(created_at, 'YYYY-MM-DD HH24:MI') as time_str
+                FROM message_board 
+                ORDER BY id DESC LIMIT 50
+            """)
+            rows = cur.fetchall()
+            return jsonify({"status": "success", "data": rows})
+
+    except Exception as e:
+        if conn: conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

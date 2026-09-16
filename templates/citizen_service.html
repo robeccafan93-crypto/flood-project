@@ -10,28 +10,28 @@
       <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone me-2"></i>服務互動</a>
     </div>
 
-    <!-- 服務互動下的子功能選單 -->
+    <!-- 服務互動子功能選單 -->
     <div class="mt-3">
       <div class="list-group shadow-sm">
         <button class="list-group-item list-group-item-action d-flex align-items-center active py-2" data-bs-toggle="pill" data-bs-target="#panel-supply">
-          <i class="bi bi-box-seam me-2 fs-6"></i> 人機物申請與紀錄
+          <i class="bi bi-box-seam me-2 fs-6"></i> 資源申請與紀錄
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-report">
           <i class="bi bi-camera me-2 fs-6 text-danger"></i> 災情通報與進度
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2 text-warning fw-bold" data-bs-toggle="pill" data-bs-target="#panel-volunteer">
-          <i class="bi bi-award-fill me-2 fs-6 text-warning"></i> 防汛志工任務大廳
+          <i class="bi bi-award-fill me-2 fs-6 text-warning"></i> 防汛志工任務與集點
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-qa">
           <i class="bi bi-robot me-2 fs-6 text-success"></i> 24H 智慧防汛問答
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-board">
-          <i class="bi bi-chat-square-text me-2 fs-6 text-info"></i> 防汛留言板 (含 #標籤)
+          <i class="bi bi-chat-square-text me-2 fs-6 text-info"></i> 防汛留言板
         </button>
       </div>
     </div>
 
-    <!-- 志工成長與勳章看板 (移至民眾端服務互動左側) -->
+    <!-- 志工成長勳章 -->
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="fw-bold text-dark mb-0"><i class="bi bi-award-fill text-warning me-1"></i>志工成長與勳章</h6>
@@ -39,7 +39,6 @@
       </div>
       <div class="small fw-bold text-primary mb-1" id="volunteer-title-text">目前頭銜：防汛見習生</div>
       
-      <!-- 升等進度條 -->
       <div class="progress mb-2" style="height: 10px;">
         <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="exp-progress-bar" style="width: 45%;"></div>
       </div>
@@ -49,13 +48,7 @@
       </div>
 
       <div class="p-2 bg-light rounded small border mb-2" id="upgrade-hint-box">
-        🚀 距離升上 <strong>Lv.4</strong> 還需 <strong>55 EXP</strong><br>
-        相當於再完成 <strong>2 次緊急任務</strong> 或 <strong>3 次一般任務</strong>！
-      </div>
-
-      <div class="small text-secondary">
-        <div>🎖️ 每 5 等升級專屬防汛頭銜</div>
-        <div>🎁 每 10 等領取專屬防汛裝備禮包</div>
+        🚀 距離升上 <strong>Lv.4</strong> 還需 <strong>55 EXP</strong>
       </div>
     </div>
   </div>
@@ -64,10 +57,10 @@
   <div class="col-md-9">
     <div class="tab-content">
       
-      <!-- 模組 1: 人機物申請與紀錄 -->
+      <!-- 模組 1: 填寫調度申請表 -->
       <div class="tab-pane fade show active" id="panel-supply">
         <div class="pro-card p-4 shadow-sm mb-4">
-          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pencil-square text-primary me-2"></i>填寫人機物調度申請表</h5>
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pencil-square text-primary me-2"></i>填寫調度申請表</h5>
           <form id="form-supply">
             <div class="row g-3">
               <div class="col-md-4">
@@ -76,7 +69,7 @@
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">所屬區域</label>
-                <input type="text" class="form-control" value="{{ session.get('district', '大同區') }}" readonly>
+                <input type="text" class="form-control" value="{{ session.get('district', '中山區') }}" readonly>
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">聯絡電話</label>
@@ -85,14 +78,14 @@
               <div class="col-md-6">
                 <label class="form-label fw-semibold">申請資源類型 (人/機/物)</label>
                 <select class="form-select" id="supply-type">
-                  <option value="物">物 (防汛沙包 10 包、防水擋板、急救物資箱)</option>
+                  <option value="人">人 (專業水電維修工、醫療急救志工)</option>
                   <option value="機">機 (移動式抽水機、抽水泵浦機具)</option>
-                  <option value="人">人 (專業水電檢修志工、緊急急救人力)</option>
+                  <option value="物" selected>物 (防汛沙包、防水擋板、急救乾糧)</option>
                 </select>
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">品項詳細名稱</label>
-                <input type="text" class="form-control" id="supply-item" placeholder="例如: 防汛沙包 10 包" required>
+                <input type="text" class="form-control" id="supply-item" placeholder="例如: 水電工 或 抽水機" required>
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-semibold">數量</label>
@@ -100,14 +93,16 @@
               </div>
             </div>
             <div class="mt-3 text-end">
-              <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold"><i class="bi bi-send-fill me-1"></i> 送出申請並生成訂單編號</button>
+              <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                <i class="bi bi-send-fill me-1"></i> 送出申請並生成訂單編號
+              </button>
             </div>
           </form>
         </div>
 
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-primary me-2"></i>我的人機物申請歷史紀錄</h5>
+            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-primary me-2"></i>我的申請歷史紀錄</h5>
             <small class="text-muted">點擊任一紀錄即可查看進度條</small>
           </div>
 
@@ -124,21 +119,14 @@
                 </tr>
               </thead>
               <tbody id="supply-history-tbody">
-                <tr>
-                  <td><span class="badge bg-light text-primary border font-monospace">ORD-20260915-081</span></td>
-                  <td>2026-09-15 09:30</td>
-                  <td><span class="badge bg-primary">物 (物資)</span></td>
-                  <td>防汛沙包 (10 包)</td>
-                  <td><span class="badge bg-warning text-dark">揀貨備料中</span></td>
-                  <td><button class="btn btn-sm btn-outline-primary" onclick="openOrderModal('ORD-20260915-081', '防汛沙包 10 包', 2, '2026-09-15 11:30')">查看進度條</button></td>
-                </tr>
+                <tr><td colspan="6" class="text-center text-muted py-3">連線資料庫讀取歷史紀錄中...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- 模組 2: 災情通報與進度 -->
+      <!-- 模組 2: 災情通報與進度 (保留原版卡片，送出後動態堆疊) -->
       <div class="tab-pane fade" id="panel-report">
         <div class="pro-card p-4 shadow-sm mb-4">
           <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera-fill text-danger me-2"></i>即時災情通報</h5>
@@ -146,7 +134,7 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-semibold">通報行政區</label>
-                <input type="text" class="form-control" id="report-district" value="{{ session.get('district', '大同區') }}" readonly>
+                <input type="text" class="form-control" id="report-district" value="{{ session.get('district', '中山區') }}" readonly>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">積淹水位置</label>
@@ -156,42 +144,80 @@
                 <label class="form-label fw-semibold">災情描述</label>
                 <textarea class="form-control" id="report-desc" rows="3" placeholder="描述積水情況..." required></textarea>
               </div>
+              
+              <!-- 上傳照片 (選填) -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-image text-primary me-1"></i>上傳災情現場照片 <small class="text-muted font-normal">(選填，提供現場照片有助於優先調派抽水機具)</small>
+                </label>
+                <input type="file" class="form-control" id="report-img-file" accept="image/*">
+                <div id="img-preview-box" class="mt-2 d-none">
+                  <img id="img-preview" src="" style="max-height: 100px; border-radius: 6px; border: 1px solid #ccc;">
+                  <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeSelectedImage()">移除</button>
+                </div>
+              </div>
             </div>
-            <button type="submit" class="btn btn-danger px-4 py-2 mt-3 fw-semibold">送出災情通報</button>
+            <button type="submit" class="btn btn-danger px-4 py-2 mt-3 fw-semibold shadow-sm">
+              <i class="bi bi-send-fill me-1"></i> 送出災情通報
+            </button>
           </form>
         </div>
 
+        <!-- 通報處理進度追蹤 (原版卡片樣式完全保留) -->
         <div class="pro-card p-4 shadow-sm">
-          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-journal-text text-danger me-2"></i>通報處理進度追蹤</h5>
-          <div class="border rounded p-3 mb-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <strong class="text-dark">案件編號 #RPT-20260915-01 (大同區斯文里)</strong>
-              <span class="badge bg-warning text-dark">工班抽水中</span>
-            </div>
-            <p class="small text-secondary mb-3">地下道機車道積水深約 20 公分，已派遣防汛工班前往。</p>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-card-checklist text-danger"></i> 通報處理進度追蹤
+            </h5>
+            <small class="text-muted">已連動資料庫與社區防災中心派案狀態</small>
+          </div>
 
-            <div class="stepper-container" style="background:#1e293b; padding: 2rem 1rem;">
-              <div class="stepper-wrapper">
-                <div class="stepper-progress-line" style="width: 66%;"></div>
-                
-                <div class="step-item completed">
-                  <div class="step-circle" style="width:70px;height:70px;"><i class="bi bi-receipt"></i><span style="font-size:0.75rem;">通報受理</span></div>
-                  <small class="text-light mt-2 d-block font-monospace">09/15 08:30<br>(完成時間)</small>
-                </div>
+          <!-- 動態案件容器 (預設保留原卡片) -->
+          <div id="disaster-reports-container">
+            <div class="border rounded p-4 mb-3 bg-white shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold text-dark mb-0">案件編號 #RPT-20260915-01 (大同區斯文里)</h5>
+                <span class="badge bg-warning text-dark px-3 py-2 fw-bold" style="font-size: 0.9rem;">工班抽水中</span>
+              </div>
+              <p class="text-secondary small mb-3">地下道機車道積水深約 20 公分，已派遣防汛工班前往。</p>
 
-                <div class="step-item completed">
-                  <div class="step-circle" style="width:70px;height:70px;"><i class="bi bi-people"></i><span style="font-size:0.75rem;">派員現場</span></div>
-                  <small class="text-light mt-2 d-block font-monospace">09/15 09:10<br>(完成時間)</small>
-                </div>
+              <!-- 4 階段圓形發光進度條 -->
+              <div class="stepper-container" style="background:#1e293b; padding: 2.2rem 1.5rem; border-radius: 12px;">
+                <div class="stepper-wrapper">
+                  <div class="stepper-progress-line" style="width: 66%;"></div>
+                  
+                  <div class="step-item completed">
+                    <div class="step-circle" style="width:75px; height:75px;">
+                      <i class="bi bi-receipt fs-4"></i>
+                      <span style="font-size:0.75rem;">通報受理</span>
+                    </div>
+                    <small class="text-light mt-2 d-block font-monospace">09/15 08:30<br>(完成時間)</small>
+                  </div>
 
-                <div class="step-item active">
-                  <div class="step-circle" style="width:70px;height:70px;"><i class="bi bi-gear-wide-connected"></i><span style="font-size:0.75rem;">搶修排除</span></div>
-                  <small class="text-warning mt-2 d-block font-monospace">09/15 11:00<br>(預估完成)</small>
-                </div>
+                  <div class="step-item completed">
+                    <div class="step-circle" style="width:75px; height:75px;">
+                      <i class="bi bi-people fs-4"></i>
+                      <span style="font-size:0.75rem;">派員現場</span>
+                    </div>
+                    <small class="text-light mt-2 d-block font-monospace">09/15 09:10<br>(完成時間)</small>
+                  </div>
 
-                <div class="step-item">
-                  <div class="step-circle" style="width:70px;height:70px;"><i class="bi bi-check2-all"></i><span style="font-size:0.75rem;">結案驗收</span></div>
-                  <small class="text-muted mt-2 d-block font-monospace">09/15 12:00<br>(預估完成)</small>
+                  <div class="step-item active">
+                    <div class="step-circle" style="width:75px; height:75px;">
+                      <i class="bi bi-gear-wide-connected fs-4"></i>
+                      <span style="font-size:0.75rem;">搶修排除</span>
+                    </div>
+                    <small class="text-warning mt-2 d-block font-monospace">09/15 11:00<br>(預估完成)</small>
+                  </div>
+
+                  <div class="step-item">
+                    <div class="step-circle" style="width:75px; height:75px;">
+                      <i class="bi bi-check2-all fs-4"></i>
+                      <span style="font-size:0.75rem;">結案驗收</span>
+                    </div>
+                    <small class="text-muted mt-2 d-block font-monospace">09/15 12:00<br>(預估完成)</small>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -199,13 +225,73 @@
         </div>
       </div>
 
-      <!-- 模組 3: 防汛志工任務大廳 (完整移至民眾端服務互動) -->
+      <!-- 模組 3: 志工任務大廳與集點兌換商城 -->
       <div class="tab-pane fade" id="panel-volunteer">
+        <div class="pro-card p-4 shadow-sm mb-4 border-start border-warning border-4">
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+              <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-gift-fill text-warning"></i> 志工榮譽集點兌換商城
+              </h5>
+              <small class="text-muted">完成防汛任務累積星星點數，可兌換各大超商商品卡與專業防汛裝備</small>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+              我的可用點數：<strong id="shop-user-stars">85</strong> 點
+            </span>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-3 col-6">
+              <div class="p-3 bg-light rounded border h-100 text-center d-flex flex-column justify-content-between">
+                <div>
+                  <div class="fs-1 text-danger mb-1"><i class="bi bi-card-checklist"></i></div>
+                  <h6 class="fw-bold text-dark mb-1">7-ELEVEN 商品卡 50元</h6>
+                  <span class="badge bg-warning text-dark mb-2"><i class="bi bi-star-fill"></i> 100 點</span>
+                </div>
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="redeemReward('7-ELEVEN 商品卡50元', 100)">立即兌換</button>
+              </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+              <div class="p-3 bg-light rounded border h-100 text-center d-flex flex-column justify-content-between">
+                <div>
+                  <div class="fs-1 text-primary mb-1"><i class="bi bi-credit-card-2-front"></i></div>
+                  <h6 class="fw-bold text-dark mb-1">全家便利商店商品卡 50元</h6>
+                  <span class="badge bg-warning text-dark mb-2"><i class="bi bi-star-fill"></i> 100 點</span>
+                </div>
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="redeemReward('全家便利商店商品卡50元', 100)">立即兌換</button>
+              </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+              <div class="p-3 bg-light rounded border h-100 text-center d-flex flex-column justify-content-between">
+                <div>
+                  <div class="fs-1 text-success mb-1"><i class="bi bi-backpack4-fill"></i></div>
+                  <h6 class="fw-bold text-dark mb-1">防災應急包</h6>
+                  <span class="badge bg-warning text-dark mb-2"><i class="bi bi-star-fill"></i> 250 點</span>
+                </div>
+                <button class="btn btn-sm btn-outline-success w-100" onclick="redeemReward('防災應急包', 250)">立即兌換</button>
+              </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+              <div class="p-3 bg-light rounded border h-100 text-center d-flex flex-column justify-content-between">
+                <div>
+                  <div class="fs-1 text-warning mb-1"><i class="bi bi-trophy-fill"></i></div>
+                  <h6 class="fw-bold text-dark mb-1">志工專屬紀念品</h6>
+                  <span class="badge bg-warning text-dark mb-2"><i class="bi bi-star-fill"></i> 500 點</span>
+                </div>
+                <button class="btn btn-sm btn-outline-warning text-dark w-100" onclick="redeemReward('志工專屬紀念品', 500)">立即兌換</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="pro-card p-4 shadow-sm mb-4">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <div>
-              <h5 class="fw-bold text-dark mb-1"><i class="bi bi-person-walking text-success me-2"></i>防汛志工任務大廳 (接案賺取 EXP 與星星)</h5>
-              <small class="text-muted">依任務類型、所需技能與距離分類，緊急任務可獲得雙倍獎勵</small>
+              <h5 class="fw-bold text-dark mb-1"><i class="bi bi-person-walking text-success me-2"></i>防汛志工任務出勤大廳</h5>
+              <small class="text-muted">依任務類型、所需技能與距離分類</small>
             </div>
             <select id="task-filter-type" class="form-select form-select-sm" style="width: 140px;">
               <option value="全部">全部任務類型</option>
@@ -224,14 +310,14 @@
                   <th>類型</th>
                   <th>所需技能</th>
                   <th>距離</th>
-                  <th>獎勵 (EXP / 點數)</th>
-                  <th>接案出勤</th>
+                  <th>獎勵</th>
+                  <th>接案</th>
                 </tr>
               </thead>
               <tbody id="volunteer-tasks-tbody">
                 <tr data-type="緊急搶修">
-                  <td class="small font-monospace">09/15 09:20</td>
-                  <td class="fw-bold text-dark">大同運動中心抽水馬達緊急配電防水</td>
+                  <td class="small font-monospace">09/17 09:20</td>
+                  <td class="fw-bold text-dark">中山區長安東路抽水馬達緊急配電防水</td>
                   <td><span class="badge bg-danger">緊急任務</span></td>
                   <td><span class="badge bg-light text-dark border">水電維修</span></td>
                   <td><span class="text-primary fw-bold">0.8 km</span></td>
@@ -239,20 +325,11 @@
                   <td><button class="btn btn-sm btn-primary" onclick="claimTask(this, 50, 20)">接案出勤</button></td>
                 </tr>
                 <tr data-type="物資配送">
-                  <td class="small font-monospace">09/15 08:45</td>
+                  <td class="small font-monospace">09/17 08:45</td>
                   <td class="fw-bold text-dark">送達 30 包沙包至重慶北路獨居長者戶</td>
                   <td><span class="badge bg-secondary">一般任務</span></td>
                   <td><span class="badge bg-light text-dark border">車輛駕駛 / 搬運</span></td>
                   <td><span class="text-primary fw-bold">1.4 km</span></td>
-                  <td><span class="badge bg-success">+25 EXP</span> <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> +10</span></td>
-                  <td><button class="btn btn-sm btn-primary" onclick="claimTask(this, 25, 10)">接案出勤</button></td>
-                </tr>
-                <tr data-type="巡邏巡檢">
-                  <td class="small font-monospace">09/15 07:30</td>
-                  <td class="fw-bold text-dark">迪化抽水站周邊水溝格柵排空巡視</td>
-                  <td><span class="badge bg-secondary">一般任務</span></td>
-                  <td><span class="badge bg-light text-dark border">不拘 / 巡守防汛</span></td>
-                  <td><span class="text-primary fw-bold">0.5 km</span></td>
                   <td><span class="badge bg-success">+25 EXP</span> <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> +10</span></td>
                   <td><button class="btn btn-sm btn-primary" onclick="claimTask(this, 25, 10)">接案出勤</button></td>
                 </tr>
@@ -262,7 +339,7 @@
         </div>
       </div>
 
-      <!-- 模組 4: 智慧問答 -->
+      <!-- 模組 4: 24H 問答 -->
       <div class="tab-pane fade" id="panel-qa">
         <div class="pro-card p-4 shadow-sm">
           <h5 class="fw-bold text-dark mb-3"><i class="bi bi-chat-dots-fill text-success me-2"></i>24H 智慧防汛即時諮詢</h5>
@@ -276,55 +353,56 @@
         </div>
       </div>
 
-      <!-- 模組 5: 防汛留言板 -->
+      <!-- 模組 5: 社區防汛即時交流留言板 -->
       <div class="tab-pane fade" id="panel-board">
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <div>
-              <h5 class="fw-bold text-dark mb-1"><i class="bi bi-chat-left-text-fill text-primary me-2"></i>社區防汛即時交流留言板</h5>
-              <small class="text-muted">可依分類篩選或輸入 #標籤 搜尋</small>
+              <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-chat-left-text-fill text-primary"></i> 社區防汛即時交流留言板
+              </h5>
+              <small class="text-muted">可依分類篩選、輸入 #標籤 搜尋，並支援時間順序切換</small>
             </div>
-            <div class="d-flex gap-2 mt-2 mt-md-0">
-              <div class="input-group input-group-sm" style="width: 200px;">
-                <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                <input type="text" id="tag-search-input" class="form-control" placeholder="搜尋 #標籤...">
+            
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-2 mt-md-0">
+              <div class="input-group input-group-sm" style="width: 170px;">
+                <span class="input-group-text bg-white text-muted">#</span>
+                <input type="text" id="board-search-input" class="form-control" placeholder="搜尋 #標籤...">
               </div>
-              <select id="board-category-select" class="form-select form-select-sm border-primary" style="width: 130px;">
-                <option value="全部">全部類別</option>
+              <select id="board-filter-select" class="form-select form-select-sm border-secondary" style="width: 120px;">
+                <option value="全部類別">全部類別</option>
                 <option value="即時路況">即時路況</option>
                 <option value="物資互助">物資互助</option>
                 <option value="志工支援">志工支援</option>
               </select>
+              <select id="board-sort-select" class="form-select form-select-sm border-primary fw-bold text-primary" style="width: 130px;">
+                <option value="desc">由新到舊 (最新)</option>
+                <option value="asc">由舊到新 (最早)</option>
+              </select>
             </div>
           </div>
 
-          <form id="form-msg-board" class="mb-4 p-3 bg-light rounded border">
+          <div class="p-3 bg-light rounded border mb-4">
             <div class="row g-2 mb-2">
               <div class="col-md-3">
-                <select id="new-msg-category" class="form-select form-select-sm">
+                <select class="form-select form-select-sm" id="msg-input-cat">
                   <option value="即時路況">即時路況</option>
                   <option value="物資互助">物資互助</option>
                   <option value="志工支援">志工支援</option>
                 </select>
               </div>
               <div class="col-md-9">
-                <input type="text" class="form-control form-control-sm" id="msg-content" placeholder="輸入留言內容，可加 #沙包 #積水 等標籤..." required>
+                <input type="text" class="form-control form-control-sm" id="msg-input-text" placeholder="輸入留言內容，可加 #沙包 #積水 等標籤..." required>
               </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <small class="text-muted">發表人：<strong>{{ session.get('name', '民眾') }} ({{ session.get('district', '大同區') }})</strong></small>
-              <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold">張貼留言</button>
+            <div class="d-flex justify-content-between align-items-center pt-1">
+              <small class="text-muted">發表人：<strong class="text-dark">{{ session.get('name', '王小明') }} ({{ session.get('district', '中山區') }})</strong></small>
+              <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="btn-submit-message">張貼留言</button>
             </div>
-          </form>
+          </div>
 
-          <div class="list-group" id="board-message-list">
-            <div class="list-group-item p-3 border-0 border-bottom" data-cat="即時路況" data-tags="#大同區 #地下道">
-              <div class="d-flex justify-content-between">
-                <h6 class="fw-bold text-dark mb-1">李里長 <span class="badge bg-info text-dark ms-1">即時路況</span></h6>
-                <small class="text-muted">10 分鐘前</small>
-              </div>
-              <p class="mb-1 text-secondary small">大同國小側門地下道已管制封閉，請鄉親繞行天橋！ <span class="badge bg-light text-primary border">#大同區</span></p>
-            </div>
+          <div class="list-group list-group-flush" id="board-message-list">
+            <div class="text-center py-4 text-muted">讀取留言板資料中...</div>
           </div>
         </div>
       </div>
@@ -338,7 +416,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content pro-card border-0 shadow-lg">
       <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold">人機物調度訂單進度</h5>
+        <h5 class="modal-title fw-bold">調度訂單進度</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
@@ -349,14 +427,14 @@
 
         <div class="stepper-container" style="background:#1e293b; padding:1.8rem 1rem;">
           <div class="stepper-wrapper">
-            <div class="stepper-progress-line" id="modal-progress-line" style="width: 33%;"></div>
+            <div class="stepper-progress-line" id="modal-progress-line" style="width: 0%;"></div>
             <div class="step-item" id="mstep-1"><div class="step-circle" style="width:65px;height:65px;"><i class="bi bi-file-earmark-text"></i><span style="font-size:0.7rem;">收到申請</span></div></div>
             <div class="step-item" id="mstep-2"><div class="step-circle" style="width:65px;height:65px;"><i class="bi bi-box-seam"></i><span style="font-size:0.7rem;">揀貨備料</span></div></div>
             <div class="step-item" id="mstep-3"><div class="step-circle" style="width:65px;height:65px;"><i class="bi bi-truck"></i><span style="font-size:0.7rem;">派送中</span></div></div>
             <div class="step-item" id="mstep-4"><div class="step-circle" style="width:65px;height:65px;"><i class="bi bi-check-circle"></i><span style="font-size:0.7rem;">已送達</span></div></div>
           </div>
         </div>
-        <div class="small text-muted mt-3">預估送達時間：<strong id="modal-order-eta" class="text-dark"></strong></div>
+        <div class="small text-muted mt-3">當前進度：<strong id="modal-order-eta" class="text-dark"></strong></div>
       </div>
     </div>
   </div>
@@ -365,100 +443,4 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/service_interactive.js') }}"></script>
-<script>
-// 志工經驗值與等級系統
-let currentLevel = 3;
-let currentExp = 45;
-let currentStars = 85;
-
-function getReqExp(lvl) {
-  return 50 + (lvl - 1) * 25;
-}
-
-function getTitle(lvl) {
-  if (lvl >= 45) return "都市防汛大師";
-  if (lvl >= 35) return "水利調度指揮官";
-  if (lvl >= 25) return "防汛工程先鋒";
-  if (lvl >= 15) return "社區核心巡防隊長";
-  if (lvl >= 5) return "社區守護者";
-  return "防汛見習生";
-}
-
-function updateLevelUI() {
-  const req = getReqExp(currentLevel);
-  const pct = Math.min(100, Math.floor((currentExp / req) * 100));
-  
-  document.getElementById('volunteer-badge-level').innerText = `Lv. ${currentLevel}`;
-  document.getElementById('volunteer-title-text').innerText = `目前頭銜：${getTitle(currentLevel)}`;
-  document.getElementById('exp-progress-bar').style.width = `${pct}%`;
-  document.getElementById('exp-current-text').innerText = `${currentExp} / ${req} EXP`;
-  document.getElementById('star-points-text').innerHTML = `<i class="bi bi-star-fill text-warning"></i> ${currentStars} 點數`;
-
-  const remainExp = req - currentExp;
-  const needEmerg = Math.ceil(remainExp / 50);
-  const needNorm = Math.ceil(remainExp / 25);
-  document.getElementById('upgrade-hint-box').innerHTML = `
-    🚀 距離升上 <strong>Lv.${currentLevel+1}</strong> 還需 <strong>${remainExp} EXP</strong><br>
-    相當於再完成 <strong>${needEmerg} 次緊急任務</strong> 或 <strong>${needNorm} 次一般任務</strong>！
-  `;
-}
-
-function claimTask(btn, addExp, addStars) {
-  currentExp += addExp;
-  currentStars += addStars;
-
-  const req = getReqExp(currentLevel);
-  if (currentExp >= req && currentLevel < 50) {
-    currentExp -= req;
-    currentLevel++;
-    alert(`🎉 恭喜升級！升上【Lv.${currentLevel}】！獲得頭銜：【${getTitle(currentLevel)}】！`);
-  } else {
-    alert(`接案出勤完成！結算獲得 +${addExp} EXP 與 +${addStars} 星星點數！`);
-  }
-
-  btn.className = "btn btn-sm btn-success disabled";
-  btn.innerText = "已出勤完成";
-  updateLevelUI();
-}
-
-function generateOrderId() {
-  const d = new Date();
-  const dateStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-  const rand = Math.floor(100 + Math.random() * 900);
-  return `ORD-${dateStr}-${rand}`;
-}
-
-function openOrderModal(orderId, itemName, stepLevel, eta) {
-  document.getElementById('modal-order-id').innerText = orderId;
-  document.getElementById('modal-order-item').innerText = itemName;
-  document.getElementById('modal-order-eta').innerText = eta || "預計 40 分鐘內送達";
-
-  const line = document.getElementById('modal-progress-line');
-  for (let i = 1; i <= 4; i++) {
-    const s = document.getElementById(`mstep-${i}`);
-    s.className = 'step-item';
-    if (i < stepLevel) s.className = 'step-item completed';
-    else if (i === stepLevel) s.className = 'step-item active';
-  }
-  line.style.width = `${(stepLevel - 1) * 33.3}%`;
-  new bootstrap.Modal(document.getElementById('orderProgressModal')).show();
-}
-
-// 側欄切換
-document.querySelectorAll('.list-group-item[data-bs-toggle="pill"]').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.list-group-item[data-bs-toggle="pill"]').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-  });
-});
-
-document.getElementById('task-filter-type')?.addEventListener('change', function() {
-  const v = this.value;
-  document.querySelectorAll('#volunteer-tasks-tbody tr').forEach(tr => {
-    tr.style.display = (v === '全部' || tr.getAttribute('data-type') === v) ? '' : 'none';
-  });
-});
-
-updateLevelUI();
-</script>
 {% endblock %}

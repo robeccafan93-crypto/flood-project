@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row">
-  <!-- 社區端三層式側欄 -->
+  <!-- 側欄 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
       <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action active"><i class="bi bi-box-seam me-2"></i>社區管理</a>
@@ -10,7 +10,6 @@
       <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-coin me-2"></i>補助資源</a>
     </div>
 
-    <!-- 庫存管理決策看板 -->
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
       <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clipboard2-data text-primary me-1"></i>社區庫存決策指標</h6>
       <ul class="list-unstyled small text-secondary mb-0">
@@ -24,7 +23,7 @@
   <!-- 主內容 -->
   <div class="col-md-9">
     
-    <!-- 頂部四大看板：乾淨數據大字報 -->
+    <!-- 頂部四大指標看板 -->
     <div class="row g-3 mb-4 text-center">
       <div class="col-md-3">
         <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center cursor-pointer hover-card" onclick="jumpToSection('inventory-section', '物')">
@@ -53,41 +52,55 @@
       <div class="col-md-3">
         <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center cursor-pointer hover-card" onclick="jumpToSection('audit-section')">
           <small class="text-muted fw-bold d-block mb-1">待審核案件數量</small>
-          <div class="fs-3 fw-bold text-danger my-1">3 件</div>
+          <div class="fs-3 fw-bold text-danger my-1" id="top-pending-count">1 件</div>
           <div class="small text-danger fw-semibold">待派案處理</div>
         </div>
       </div>
     </div>
 
-    <!-- 審核派案工作台 -->
-    <div class="pro-card p-4 shadow-sm mb-4" id="audit-section">
-      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clipboard-check text-primary me-2"></i>災情通報審核與派案工作台</h5>
-        <span class="badge bg-warning text-dark px-3 py-2">待處理案件：2 件</span>
+    <!-- 災情通報審核與派案工作台 (排版優化：拉寬選單、對齊按鈕、不擠字) -->
+    <div class="pro-card p-4 shadow-sm mb-4 bg-white border rounded" id="audit-section">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-check2-square text-primary fs-5"></i> 災情通報審核與派案工作台
+        </h5>
+        <span class="badge bg-warning text-dark px-3 py-2 fw-bold" id="badge-pending-count" style="font-size: 0.9rem;">待處理案件：1 件</span>
       </div>
 
       <div class="table-responsive">
-        <table class="table table-hover align-middle table-custom mb-0">
-          <thead>
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light text-secondary small text-uppercase">
             <tr>
-              <th>通報市民</th>
-              <th>災害描述</th>
-              <th>判定</th>
-              <th>任務類型</th>
-              <th>指派志工</th>
-              <th>操作</th>
+              <th style="min-width: 100px;">通報市民</th>
+              <th style="min-width: 240px;">災害描述</th>
+              <th style="min-width: 90px;">判定</th>
+              <th style="min-width: 120px;">任務類型</th>
+              <th style="min-width: 180px;">指派志工</th>
+              <th style="min-width: 100px; text-align: center;">操作</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>市民 王先生</strong></td>
-              <td>地下室配電箱積水，急需斷電修繕</td>
+          <tbody id="community-audit-tbody">
+            <!-- 預設王先生案件 (排版調寬，不截字) -->
+            <tr id="default-task-row">
+              <td class="fw-bold text-dark">市民 王先生</td>
+              <td class="text-secondary small">地下室配電箱積水，急需斷電修繕</td>
               <td><span class="badge bg-success">案件成立</span></td>
               <td><span class="badge bg-info text-dark">水電緊急搶修</span></td>
-              <td><select class="form-select form-select-sm"><option>張師傅 (水電專長)</option></select></td>
               <td>
-                <button class="btn btn-sm btn-primary" onclick="alert('已成功派遣！')"><i class="bi bi-check-lg"></i> 派遣</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="alert('已駁回')">駁回</button>
+                <select class="form-select form-select-sm" style="min-width: 170px;">
+                  <option value="張師傅 (水電專長)" selected>張師傅 (水電專長)</option>
+                  <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
+                </select>
+              </td>
+              <td>
+                <div class="d-flex flex-column gap-1">
+                  <button class="btn btn-sm btn-primary py-1 px-2 fw-semibold" onclick="handleDefaultDispatch(this)">
+                    <i class="bi bi-check-lg"></i> 派遣
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="handleDefaultReject(this)">
+                    駁回
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -96,7 +109,7 @@
     </div>
 
     <!-- 社區人機物庫存 -->
-    <div class="pro-card p-4 shadow-sm" id="inventory-section">
+    <div class="pro-card p-4 shadow-sm bg-white border rounded" id="inventory-section">
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
         <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-boxes text-primary me-2"></i>社區人機物智能庫存</h4>
         <select id="filter-category" class="form-select form-select-sm border-primary fw-bold text-primary" style="width: 170px;">
@@ -132,6 +145,87 @@
 
 {% block extra_js %}
 <script>
+document.addEventListener("DOMContentLoaded", () => {
+  renderTable("ALL");
+  loadNewDisasterReports();
+});
+
+async function loadNewDisasterReports() {
+  try {
+    const res = await fetch("/api/disaster-report");
+    const json = await res.json();
+    if (json.status === "success" && json.data) {
+      const tbody = document.getElementById("community-audit-tbody");
+      const newItems = json.data.filter(d => d.report_no !== 'RPT-20260915-01' && d.status === '通報受理');
+      
+      const totalCount = 1 + newItems.length;
+      document.getElementById("top-pending-count").innerText = `${totalCount} 件`;
+      document.getElementById("badge-pending-count").innerText = `待處理案件：${totalCount} 件`;
+
+      newItems.forEach(task => {
+        tbody.innerHTML += `
+          <tr id="task-${task.report_no}">
+            <td class="fw-bold text-dark">${task.user_name}</td>
+            <td class="text-secondary small">
+              <strong class="text-dark">【${task.district}】${task.location_description || ''}</strong><br>
+              ${task.description}
+            </td>
+            <td><span class="badge bg-success">案件成立</span></td>
+            <td><span class="badge bg-warning text-dark">淹水搶修</span></td>
+            <td>
+              <select class="form-select form-select-sm" id="vol-${task.report_no}" style="min-width: 170px;">
+                <option value="張師傅 (水電專長)">張師傅 (水電專長)</option>
+                <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
+              </select>
+            </td>
+            <td>
+              <div class="d-flex flex-column gap-1">
+                <button class="btn btn-sm btn-primary py-1 px-2 fw-semibold" onclick="auditCase('${task.report_no}', 'dispatch')">
+                  <i class="bi bi-check-lg"></i> 派遣
+                </button>
+                <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="auditCase('${task.report_no}', 'reject')">
+                  駁回
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+  } catch(e) {}
+}
+
+function handleDefaultDispatch(btn) {
+  alert("案件審核成立！已派遣 張師傅 (水電專長) 前往斯文里現場搶修配電箱！");
+  document.getElementById("default-task-row")?.remove();
+  updateCounts();
+}
+
+function handleDefaultReject(btn) {
+  alert("已駁回該通報案件。");
+  document.getElementById("default-task-row")?.remove();
+  updateCounts();
+}
+
+async function auditCase(reportNo, action) {
+  const vol = document.getElementById(`vol-${reportNo}`)?.value || "志工機動隊";
+  const res = await fetch("/api/disaster-report/audit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ report_no: reportNo, action: action, volunteer: vol })
+  });
+  const data = await res.json();
+  alert(data.message || "處理完成");
+  document.getElementById(`task-${reportNo}`)?.remove();
+  updateCounts();
+}
+
+function updateCounts() {
+  const remain = document.querySelectorAll("#community-audit-tbody tr").length;
+  document.getElementById("top-pending-count").innerText = `${remain} 件`;
+  document.getElementById("badge-pending-count").innerText = `待處理案件：${remain} 件`;
+}
+
 function jumpToSection(sectionId, filterVal, highlightExp) {
   const el = document.getElementById(sectionId);
   if (el) {
@@ -194,7 +288,5 @@ function renderTable(filter) {
 document.getElementById("filter-category").addEventListener("change", function() {
   renderTable(this.value);
 });
-
-renderTable("ALL");
 </script>
 {% endblock %}

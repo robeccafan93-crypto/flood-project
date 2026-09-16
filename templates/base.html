@@ -63,7 +63,6 @@
         <!-- 會員頭像按鈕 -->
         <div class="d-flex align-items-center gap-3">
           {% if session.get('username') %}
-            <!-- 點擊彈出個人檔案 Modal -->
             <button class="btn btn-outline-light rounded-pill px-3 py-1 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal" title="點擊編輯個人資料">
               {% if session.get('role') == 'community' %}
                 <span class="badge bg-warning text-dark rounded-circle"><i class="bi bi-building"></i></span>
@@ -85,7 +84,50 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- 個人資料修改彈窗 (完整恢復) -->
+  <!-- 右下角低調模擬演練觸發按鈕 (不明顯，但隨時可按以供展示) -->
+  <div style="position: fixed; bottom: 15px; right: 15px; z-index: 1040;">
+    <button class="btn btn-sm btn-outline-secondary opacity-75 shadow-sm rounded-pill px-3 py-1 bg-white" style="font-size: 0.78rem;" onclick="triggerEmergencyAlert('大同區 / 北投區', '短延時強降雨已達 85mm/hr，低窪地下道已發布一級淹水警戒！')">
+      <i class="bi bi-shield-exclamation text-danger me-1"></i> 模擬暴雨警示
+    </button>
+  </div>
+
+  <!-- 水災緊急彈跳警示視窗 (含避難指引與一鍵導航按鈕) -->
+  <div class="modal fade" id="floodEmergencyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg overflow-hidden">
+        <div class="modal-header bg-danger text-white py-3">
+          <h5 class="modal-title fw-bold d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-2 animate-bounce"></i>
+            【緊急防汛避難警報】
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+          <div class="alert alert-danger border-danger mb-3">
+            <h6 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-1"></i>警戒區域：<span id="alert-district-name">大同區 / 北投區</span></h6>
+            <div class="small" id="alert-detail-msg">智慧預警模型偵測降雨超標，短延時強降雨已達 85mm/hr，地下道與低窪處極易積水！</div>
+          </div>
+
+          <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i>標準避難應變行動指南：</h6>
+          <ul class="small text-secondary ps-3 mb-4">
+            <li class="mb-1"><strong>迅速往高處垂直避難：</strong>前往 2 樓以上安全處所，切勿前往地下室。</li>
+            <li class="mb-1"><strong>切勿穿越積水區域：</strong>水深超過輪胎一半時禁止涉水駕車。</li>
+            <li class="mb-1"><strong>關閉總電源：</strong>預防浸水漏電意外發生。</li>
+            <li class="mb-0"><strong>前往收容處所：</strong>請依循安全避難路徑移動。</li>
+          </ul>
+
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('citizen_warning') }}" class="btn btn-danger btn-lg py-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow">
+              <i class="bi bi-cursor-fill"></i> 立即啟動安全避難導航
+            </a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">留在本頁</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 個人資料彈窗 -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -204,6 +246,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    function triggerEmergencyAlert(district, detail) {
+      document.getElementById('alert-district-name').innerText = district || '臺北市警戒區域';
+      if (detail) document.getElementById('alert-detail-msg').innerText = detail;
+      const modal = new bootstrap.Modal(document.getElementById('floodEmergencyModal'));
+      modal.show();
+    }
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
