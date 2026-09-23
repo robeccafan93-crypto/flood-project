@@ -6,9 +6,12 @@ from datetime import datetime
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "flood_system_secret_key_2026")
+
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Neon PostgreSQL 連線字串 (直連雲端資料庫)
 DB_CONNECTION_STRING = os.getenv(
