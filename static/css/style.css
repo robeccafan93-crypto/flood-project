@@ -14,7 +14,6 @@ body {
   flex-direction: column;
 }
 
-/* 頂部導航列 */
 .navbar-custom {
   background-color: var(--dark-slate);
   border-bottom: 1px solid #1e293b;
@@ -51,7 +50,6 @@ body {
   color: white;
 }
 
-/* 圖一風格：全屏高質感 Hero 橫幅 */
 .hero-resort-banner {
   position: relative;
   background: linear-gradient(rgba(11, 19, 41, 0.55), rgba(11, 19, 41, 0.7)),
@@ -86,7 +84,6 @@ body {
   opacity: 0.6;
 }
 
-/* 圖一風格：底部懸浮快速資訊列 (Floating Bar) */
 .floating-status-bar {
   background: white;
   border-radius: 12px;
@@ -141,7 +138,6 @@ body {
   color: white;
 }
 
-/* 精緻模組標題分隔線 */
 .section-title-wrapper {
   text-align: center;
   margin: 4.5rem 0 2.5rem 0;
@@ -167,7 +163,6 @@ body {
   margin: 0 auto;
 }
 
-/* 核心模組精緻卡片 */
 .service-showcase-card {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -187,7 +182,6 @@ body {
   width: 100%;
 }
 
-/* 登入經典白底卡片 */
 .auth-classic-card {
   background: #ffffff;
   border: 1px solid #dbe2ea;
@@ -211,88 +205,79 @@ body {
   padding: 0.65rem 0.9rem;
 }
 
-/* ================= 物資申請動態進度條 (比照參考圖) ================= */
-.stepper-container {
-  background-color: #2b354f;
-  border-radius: 12px;
-  padding: 2.5rem 1.5rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  margin: 1.5rem 0;
-}
-
-.stepper-wrapper {
+/* ================= 緊湊進度條樣式 ================= */
+.stepper-compact-wrapper {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-  max-width: 720px;
-  margin: 0 auto;
+  padding: 0 20px;
 }
 
-/* 連接線 */
-.stepper-wrapper::before {
+.stepper-compact-wrapper::before {
   content: '';
   position: absolute;
-  top: 40px;
+  top: 24px;
   left: 45px;
   right: 45px;
-  height: 6px;
-  background-color: #64748b;
+  height: 4px;
+  background-color: #cbd5e1;
   z-index: 1;
 }
 
-.stepper-progress-line {
+.stepper-compact-line {
   position: absolute;
-  top: 40px;
+  top: 24px;
   left: 45px;
-  height: 6px;
+  height: 4px;
   background: linear-gradient(90deg, #10b981, #06b6d4);
   z-index: 2;
-  transition: width 0.4s ease;
-  width: 33%; /* 預設在第 2 步，可透過 JS 動態設定 0%, 33%, 66%, 100% */
+  transition: width 0.3s ease;
 }
 
-/* 圓形節點 */
-.step-item {
+.step-compact-item {
   position: relative;
   z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-}
-
-.step-circle {
   width: 80px;
-  height: 80px;
+}
+
+.step-compact-circle {
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #64748b;
-  border: 3px solid rgba(255, 255, 255, 0.6);
+  background: #94a3b8;
+  border: 3px solid #ffffff;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  color: #e2e8f0;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
 }
 
-.step-circle i {
-  font-size: 1.6rem;
-  margin-bottom: 2px;
-}
-
-.step-circle span {
+.step-compact-title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #475569;
+  margin-top: 6px;
+  white-space: nowrap;
 }
 
-/* 啟用 / 完成狀態 (同圖中的青綠漸層) */
-.step-item.active .step-circle,
-.step-item.completed .step-circle {
-  background: linear-gradient(145deg, #0ea5e9, #10b981);
-  border-color: #ffffff;
-  transform: scale(1.06);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45);
+.step-time {
+  font-size: 0.72rem;
+  line-height: 1.1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.step-compact-item.active .step-compact-circle,
+.step-compact-item.completed .step-compact-circle {
+  background: linear-gradient(135deg, #0ea5e9, #10b981);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  transform: scale(1.08);
 }

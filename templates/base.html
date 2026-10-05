@@ -84,27 +84,27 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- 右下角低調模擬演練觸發按鈕 (不明顯，但隨時可按以供展示) -->
+  <!-- 右下角低調模擬演練觸發按鈕 -->
   <div style="position: fixed; bottom: 15px; right: 15px; z-index: 1040;">
-    <button class="btn btn-sm btn-outline-secondary opacity-75 shadow-sm rounded-pill px-3 py-1 bg-white" style="font-size: 0.78rem;" onclick="triggerEmergencyAlert('大同區 / 北投區', '短延時強降雨已達 85mm/hr，低窪地下道已發布一級淹水警戒！')">
+    <button class="btn btn-sm btn-outline-secondary opacity-75 shadow-sm rounded-pill px-3 py-1 bg-white" style="font-size: 0.78rem;" onclick="triggerEmergencyAlert('大同區 / 中山區', '短延時強降雨已達 85mm/hr，低窪地下道已發布一級淹水警戒！')">
       <i class="bi bi-shield-exclamation text-danger me-1"></i> 模擬暴雨警示
     </button>
   </div>
 
-  <!-- 水災緊急彈跳警示視窗 (含避難指引與一鍵導航按鈕) -->
+  <!-- 水災緊急彈跳警示視窗 -->
   <div class="modal fade" id="floodEmergencyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg overflow-hidden">
         <div class="modal-header bg-danger text-white py-3">
           <h5 class="modal-title fw-bold d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill fs-3 me-2 animate-bounce"></i>
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-2"></i>
             【緊急防汛避難警報】
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 bg-light">
           <div class="alert alert-danger border-danger mb-3">
-            <h6 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-1"></i>警戒區域：<span id="alert-district-name">大同區 / 北投區</span></h6>
+            <h6 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-1"></i>警戒區域：<span id="alert-district-name">大同區 / 中山區</span></h6>
             <div class="small" id="alert-detail-msg">智慧預警模型偵測降雨超標，短延時強降雨已達 85mm/hr，地下道與低窪處極易積水！</div>
           </div>
 
@@ -112,14 +112,13 @@
           <ul class="small text-secondary ps-3 mb-4">
             <li class="mb-1"><strong>迅速往高處垂直避難：</strong>前往 2 樓以上安全處所，切勿前往地下室。</li>
             <li class="mb-1"><strong>切勿穿越積水區域：</strong>水深超過輪胎一半時禁止涉水駕車。</li>
-            <li class="mb-1"><strong>關閉總電源：</strong>預防浸水漏電意外發生。</li>
-            <li class="mb-0"><strong>前往收容處所：</strong>請依循安全避難路徑移動。</li>
+            <li class="mb-1"><strong>前往推薦避難處所：</strong>中山區行政中心 / 中正運動中心。</li>
           </ul>
 
           <div class="d-grid gap-2">
-            <a href="{{ url_for('citizen_warning') }}" class="btn btn-danger btn-lg py-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow">
-              <i class="bi bi-cursor-fill"></i> 立即啟動安全避難導航
-            </a>
+            <button type="button" class="btn btn-danger btn-lg py-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow" onclick="launchDirectGoogleNavigation()">
+              <i class="bi bi-cursor-fill"></i> 立即啟動 Google Maps 避難導航
+            </button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">留在本頁</button>
           </div>
         </div>
@@ -127,7 +126,7 @@
     </div>
   </div>
 
-  <!-- 個人資料彈窗 -->
+  <!-- 需求 6：個人資料彈窗（完整接回志工專長技能項目設定） -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -165,7 +164,7 @@
               </select>
             </div>
 
-            <!-- 可修改技能項目 -->
+            <!-- 需求 6：志工專長技能項目設定（完全復原） -->
             <div class="mb-3 p-3 bg-light rounded border">
               <label class="form-label text-dark small fw-bold d-block mb-2">志工專長技能項目設定</label>
               <div class="row g-2">
@@ -231,10 +230,7 @@
       });
       const data = await res.json();
       if (data.status === 'success') {
-        alert("個人資料與專長技能已成功儲存並同步至資料庫！");
         location.reload();
-      } else {
-        alert(data.message || '更新失敗');
       }
     });
   </script>
@@ -252,6 +248,23 @@
       if (detail) document.getElementById('alert-detail-msg').innerText = detail;
       const modal = new bootstrap.Modal(document.getElementById('floodEmergencyModal'));
       modal.show();
+    }
+
+    function launchDirectGoogleNavigation() {
+      const dest = encodeURIComponent("臺北市中山區松江路367號");
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${dest}&travelmode=driving`;
+            window.open(url, '_blank');
+          },
+          () => {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
+          }
+        );
+      } else {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`, '_blank');
+      }
     }
   </script>
   {% block extra_js %}{% endblock %}

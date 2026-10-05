@@ -11,10 +11,10 @@
 
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
       <h6 class="fw-bold text-dark mb-2"><i class="bi bi-compass text-primary me-1"></i>避難導航引擎</h6>
-      <p class="small text-muted mb-2">整合水利處 IoT 即時水位站與 Google Maps 官方路線規劃，自動排除積淹水低窪路段。</p>
+      <p class="small text-muted mb-2">整合水利處 IoT 水位站與 Google Maps 官方路線規劃，自動排除積淹水低窪路段。</p>
       <div class="small text-secondary border-top pt-2">
         <div class="mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>位置：<span id="geo-status" class="fw-bold text-dark">抓取中...</span></div>
-        <button class="btn btn-sm btn-primary w-100 mt-2" onclick="getUserRealLocation()"><i class="bi bi-crosshair me-1"></i>重新校準真實 GPS</button>
+        <button class="btn btn-sm btn-primary w-100 mt-2" onclick="getUserRealLocation()"><i class="bi bi-crosshair me-1"></i>重新校準 GPS</button>
       </div>
     </div>
   </div>
@@ -46,19 +46,19 @@
       </div>
     </div>
 
-    <!-- 避難處所名冊 -->
+    <!-- 避難處所名冊 (已修復水平捲軸與斷行問題，100% 自適應版面) -->
     <div class="pro-card p-4 shadow-sm">
-      <h5 class="fw-bold text-dark mb-3"><i class="bi bi-building-check text-primary me-2"></i>合法避難收容處所名冊 (已按真實距離排序)</h5>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle table-custom">
-          <thead>
+      <h5 class="fw-bold text-dark mb-3"><i class="bi bi-building-check text-primary me-2"></i>合法避難收容處所</h5>
+      <div class="table-responsive" style="overflow-x: hidden;">
+        <table class="table table-hover align-middle table-custom mb-0 w-100" style="table-layout: auto;">
+          <thead class="table-light">
             <tr>
-              <th>收容所名稱</th>
-              <th>所屬區域</th>
-              <th>詳細地址</th>
-              <th>最大容納</th>
-              <th>距您真實距離</th>
-              <th>Google Maps 導航</th>
+              <th style="white-space: nowrap; width: 28%;">收容所名稱</th>
+              <th style="white-space: nowrap; width: 12%; text-align: center;">所屬區域</th>
+              <th style="width: 32%; word-break: keep-all;">詳細地址</th>
+              <th style="white-space: nowrap; width: 10%; text-align: center;">最大容納</th>
+              <th style="white-space: nowrap; width: 10%; text-align: center;">距您距離</th>
+              <th style="white-space: nowrap; width: 8%; text-align: center;">路線導航</th>
             </tr>
           </thead>
           <tbody id="shelter-table-body">
@@ -74,15 +74,14 @@
 <script>
 let map;
 let userMarker = null;
-// 初始預設座標
 let userCoords = { lat: 25.0478, lng: 121.5318 };
 
 const shelters = [
   { name: "大同運動中心 (防汛備援中心)", district: "大同區", address: "臺北市大同區大龍街51號", capacity: 500, lat: 25.0655, lng: 121.5145 },
-  { name: "大安國中避難收容所", district: "大安區", address: "臺北市大安區大安路二段63號", capacity: 850, lat: 25.0315, lng: 121.5435 },
-  { name: "北投國小活動中心", district: "北投區", address: "臺北市北投區中央北路一段183號", capacity: 650, lat: 25.1325, lng: 121.4988 },
   { name: "士林國小體育館", district: "士林區", address: "臺北市士林區大東路165號", capacity: 700, lat: 25.0920, lng: 121.5260 },
-  { name: "中正運動中心", district: "中正區", address: "臺北市中正區信義路一段1號", capacity: 600, lat: 25.0385, lng: 121.5190 }
+  { name: "中正運動中心", district: "中正區", address: "臺北市中正區信義路一段1號", capacity: 600, lat: 25.0385, lng: 121.5190 },
+  { name: "大安國中避難收容所", district: "大安區", address: "臺北市大安區大安路二段63號", capacity: 850, lat: 25.0315, lng: 121.5435 },
+  { name: "北投國小活動中心", district: "北投區", address: "臺北市北投區中央北路一段183號", capacity: 650, lat: 25.1325, lng: 121.4988 }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -96,7 +95,6 @@ function initMap() {
     attribution: '© OpenStreetMap | 臺北市政府水利資料開放平台'
   }).addTo(map);
 
-  // 標註警戒分區圓環
   L.circle([25.1325, 121.4988], { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.35, radius: 2200 }).addTo(map).bindPopup("<b>北投低窪警戒區</b>：嚴重 (建議疏散)");
   L.circle([25.0655, 121.5145], { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.35, radius: 1800 }).addTo(map).bindPopup("<b>大同延平北路段</b>：偏高 (地下道預警)");
   L.circle([25.0920, 121.5260], { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.35, radius: 1500 }).addTo(map).bindPopup("<b>士林基隆河沿線</b>：注意");
@@ -114,18 +112,16 @@ function initMap() {
   });
 }
 
-// 真實定位：雙軌機制（精準 GPS + 網路 IP 備援）
 async function getUserRealLocation() {
   const statusEl = document.getElementById('geo-status');
-  statusEl.innerText = "正在取得真實 GPS 定位...";
+  statusEl.innerText = "正在取得 GPS 定位...";
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         applyCoordinates(pos.coords.latitude, pos.coords.longitude, "GPS 衛星定位");
       },
-      async (err) => {
-        // 若瀏覽器封鎖 GPS，自動啟用 IP Geolocation 取得真實所在行政區
+      async () => {
         await fallbackIpLocation();
       },
       { enableHighAccuracy: true, timeout: 6000 }
@@ -136,7 +132,6 @@ async function getUserRealLocation() {
 }
 
 async function fallbackIpLocation() {
-  const statusEl = document.getElementById('geo-status');
   try {
     const res = await fetch('https://ipapi.co/json/');
     const data = await res.json();
@@ -171,7 +166,6 @@ function applyCoordinates(lat, lng, sourceText) {
   renderShelterTable(userCoords.lat, userCoords.lng);
 }
 
-// 經緯度距離計算 (公里)
 function getDistanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -198,14 +192,17 @@ function renderShelterTable(userLat, userLng) {
     const isNearest = idx === 0;
     tbody.innerHTML += `
       <tr class="${isNearest ? 'table-primary-subtle' : ''}">
-        <td><strong>${s.name}</strong> ${isNearest ? '<span class="badge bg-primary ms-1">最近推薦</span>' : ''}</td>
-        <td>${s.district}</td>
-        <td class="small text-secondary">${s.address}</td>
-        <td><span class="badge bg-secondary">${s.capacity} 人</span></td>
-        <td class="fw-bold font-monospace text-dark">${s.distance} km</td>
         <td>
-          <button class="btn btn-sm ${isNearest ? 'btn-danger' : 'btn-outline-danger'}" onclick="openGoogleMaps(${s.lat}, ${s.lng})">
-            <i class="bi bi-google me-1"></i> Google 導航
+          <strong class="text-dark">${s.name}</strong> 
+          ${isNearest ? '<span class="badge bg-primary ms-1" style="white-space: nowrap;">最近推薦</span>' : ''}
+        </td>
+        <td style="white-space: nowrap; text-align: center;">${s.district}</td>
+        <td class="small text-secondary" style="word-break: keep-all;">${s.address}</td>
+        <td style="white-space: nowrap; text-align: center;"><span class="badge bg-secondary">${s.capacity} 人</span></td>
+        <td style="white-space: nowrap; text-align: center;" class="fw-bold font-monospace text-dark">${s.distance} km</td>
+        <td style="white-space: nowrap; text-align: center;">
+          <button class="btn btn-sm ${isNearest ? 'btn-danger' : 'btn-outline-danger'} px-2 py-1" onclick="openGoogleMaps(${s.lat}, ${s.lng})">
+            <i class="bi bi-google me-1"></i>導航
           </button>
         </td>
       </tr>
@@ -213,7 +210,6 @@ function renderShelterTable(userLat, userLng) {
   });
 }
 
-// 結合 Google Maps 官方即時避難導航 (第 3 點要求)
 function openGoogleMaps(destLat, destLng) {
   const origin = `${userCoords.lat},${userCoords.lng}`;
   const destination = `${destLat},${destLng}`;
