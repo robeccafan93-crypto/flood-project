@@ -5,6 +5,8 @@ let cachedMessages = [];
 let cachedSupplyData = [];
 let cachedDisasterData = [];
 let selectedImageBase64 = "";
+let tickerInterval = null;
+let selectedDisasterTypes = [];
 
 // 資源主類型、子分類與具體品項規格字典
 const resourceDictionary = {
@@ -68,6 +70,17 @@ const resourceDictionary = {
 
 let pendingRequestItems = [];
 
+// 調整為優雅、柔和的標籤樣式：統一深灰文字搭配淡雅背景與同色細邊框
+const DISASTER_TAG_STYLES = {
+  "路樹災情": "background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;",
+  "廣告招牌災情": "background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;",
+  "道路災情": "background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;",
+  "鐵路、高鐵捷運災情": "background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;",
+  "積淹水災情": "background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;",
+  "建物毀損": "background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca;",
+  "其他災情": "background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0;"
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   updateSubCatOptions();
   loadSupplyHistory();
@@ -76,6 +89,17 @@ document.addEventListener("DOMContentLoaded", () => {
   loadBoardMessages();
   updateVolunteerUI();
 
+  // 歷史紀錄篩選事件
+  document.getElementById("supply-search-keyword")?.addEventListener("input", filterAndRenderSupplyHistory);
+  document.getElementById("supply-filter-type")?.addEventListener("change", filterAndRenderSupplyHistory);
+  document.getElementById("supply-sort-time")?.addEventListener("change", filterAndRenderSupplyHistory);
+
+  // 災情追蹤篩選事件
+  document.getElementById("disaster-search-keyword")?.addEventListener("input", filterAndRenderDisasterAccordion);
+  document.getElementById("disaster-filter-status")?.addEventListener("change", filterAndRenderDisasterAccordion);
+  document.getElementById("disaster-sort-time")?.addEventListener("change", filterAndRenderDisasterAccordion);
+
+  // 照片預覽與壓縮
   const fileInput = document.getElementById("report-img-file");
   if (fileInput) {
     fileInput.addEventListener("change", function(e) {
@@ -111,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 留言板
   const btnSubmitMsg = document.getElementById("btn-submit-message");
   if (btnSubmitMsg) {
     btnSubmitMsg.addEventListener("click", async () => {
@@ -135,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 智慧防汛問答發送邏輯
   const btnSendQa = document.getElementById("btn-send-qa");
   const qaInput = document.getElementById("qa-input");
   const chatBox = document.getElementById("chat-box");
@@ -147,6 +173,10 @@ document.addEventListener("DOMContentLoaded", () => {
       qaInput.value = "";
       chatBox.scrollTop = chatBox.scrollHeight;
 
+      const thinkingId = "thinking_" + Date.now();
+      chatBox.innerHTML += `<div class="mb-2 text-muted small" id="${thinkingId}"><strong class="text-primary">🤖 防汛助手：</strong>正在分析全區水情與防汛資料庫...</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+
       try {
         const res = await fetch("/api/qa-chat", {
           method: "POST",
@@ -154,9 +184,16 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ question: q })
         });
         const data = await res.json();
-        chatBox.innerHTML += `<div class="mb-2"><strong class="text-primary">🤖 防汛助手：</strong>${data.answer}</div>`;
+        document.getElementById(thinkingId)?.remove();
+
+        const engineBadge = data.engine === "gemini_ai" ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size:0.7rem;">Gemini AI 即時研判</span>` : "";
+        chatBox.innerHTML += `<div class="mb-2"><strong class="text-primary">🤖 防汛助手${engineBadge}：</strong>${data.answer}</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
-      } catch (e) {}
+      } catch (e) {
+        document.getElementById(thinkingId)?.remove();
+        chatBox.innerHTML += `<div class="mb-2"><strong class="text-primary">🤖 防汛助手：</strong>如遇暴雨緊急狀況，請優先前往二樓以上處所垂直避難，或前往預警避難專區啟動安全路線導航。</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
     };
     btnSendQa.addEventListener("click", sendQa);
     qaInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendQa(); });
@@ -244,7 +281,6 @@ function renderRequestTable() {
   });
 }
 
-// 彈出確認調度申請內容 Modal（填入基礎資料與明細表格）
 function promptConfirmSupplyModal() {
   if (pendingRequestItems.length === 0) return;
 
@@ -256,7 +292,6 @@ function promptConfirmSupplyModal() {
   document.getElementById("cmodal-phone").innerText = phone;
   document.getElementById("cmodal-address").innerText = address;
 
-  // 動態渲染確認彈窗中的品項表格
   const tbody = document.getElementById("cmodal-items-table-body");
   tbody.innerHTML = "";
   pendingRequestItems.forEach((it, idx) => {
@@ -344,21 +379,113 @@ function executeRealSupplySubmit() {
   }
 }
 
-function appendDescTag(tagText) {
-  const descArea = document.getElementById("report-desc");
-  if (!descArea) return;
-  if (descArea.value.includes(tagText)) return;
-  descArea.value = descArea.value ? `${descArea.value}，${tagText}` : tagText;
+// 多選災害種類標籤
+function addDisasterTypeTag(typeVal) {
+  if (!typeVal) return;
+  if (!selectedDisasterTypes.includes(typeVal)) {
+    selectedDisasterTypes.push(typeVal);
+    renderDisasterTypeTags();
+    syncDisasterDesc();
+  }
+  const typeSelect = document.getElementById("report-disaster-type");
+  if (typeSelect) typeSelect.selectedIndex = 0;
 }
 
+function removeDisasterTypeTag(typeVal) {
+  selectedDisasterTypes = selectedDisasterTypes.filter(t => t !== typeVal);
+  renderDisasterTypeTags();
+  syncDisasterDesc();
+}
+
+function renderDisasterTypeTags() {
+  const container = document.getElementById("selected-types-container");
+  if (!container) return;
+
+  if (selectedDisasterTypes.length === 0) {
+    container.innerHTML = `<small class="text-muted" id="types-placeholder-text">尚未選取種類，可從上方下拉選單點選加入災害種類</small>`;
+    return;
+  }
+
+  container.innerHTML = selectedDisasterTypes.map(t => `
+    <span class="badge d-inline-flex align-items-center gap-1 py-1 px-2 fw-semibold" style="font-size:0.8rem; background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;">
+      ${t}
+      <i class="bi bi-x-circle-fill opacity-75" onclick="removeDisasterTypeTag('${t}')" style="cursor: pointer;"></i>
+    </span>
+  `).join("");
+}
+
+// 同步災情描述框（【種類】後面不加冒號，直接留空格）
+function syncDisasterDesc() {
+  const descArea = document.getElementById("report-desc");
+  if (!descArea) return;
+
+  const currentLines = descArea.value.split("\n");
+  const descMap = {};
+
+  currentLines.forEach(line => {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^【(.*?)】\s*[:：\s]*(.*)$/);
+    if (match) {
+      descMap[match[1]] = match[2].trim();
+    } else if (trimmed && !trimmed.startsWith("【")) {
+      descMap["__extra__"] = (descMap["__extra__"] ? descMap["__extra__"] + " " : "") + trimmed;
+    }
+  });
+
+  if (selectedDisasterTypes.length === 0) {
+    descArea.value = descMap["__extra__"] || "";
+    return;
+  }
+
+  const newLines = selectedDisasterTypes.map(t => {
+    const userText = descMap[t] ? ` ${descMap[t]}` : " ";
+    return `【${t}】${userText}`;
+  });
+
+  if (descMap["__extra__"]) {
+    newLines.push(descMap["__extra__"]);
+  }
+
+  descArea.value = newLines.join("\n");
+}
+
+// 彈出確認災情通報 Modal（字級精巧、統一柔和淡色框線與深色文字）
 function promptConfirmDisasterModal() {
   const district = document.getElementById("report-district")?.value || "中山區";
   const loc = document.getElementById("report-loc")?.value.trim() || "";
-  const desc = document.getElementById("report-desc")?.value.trim() || "";
+  const rawDesc = document.getElementById("report-desc")?.value.trim() || "";
 
   document.getElementById("cdmodal-district").innerText = district;
   document.getElementById("cdmodal-loc").innerText = loc;
-  document.getElementById("cdmodal-desc").innerText = desc;
+
+  // 1. 災害種類：改為淡雅柔和的標籤樣式，中間以「、」區隔
+  const typeContainer = document.getElementById("cdmodal-type");
+  if (typeContainer) {
+    if (selectedDisasterTypes.length === 0) {
+      typeContainer.innerHTML = `<span class="badge py-1 px-2" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:0.78rem;">一般通報</span>`;
+    } else {
+      typeContainer.innerHTML = selectedDisasterTypes.map((t, idx) => {
+        const badgeHtml = `<span class="badge py-1 px-2 fw-semibold" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.78rem;">${t}</span>`;
+        return idx < selectedDisasterTypes.length - 1 ? `${badgeHtml}、` : badgeHtml;
+      }).join("");
+    }
+  }
+
+  // 2. 災情描述摘要：統一深色字體、字級恰當、淡色優雅標籤，去除突兀色塊
+  const descContainer = document.getElementById("cdmodal-desc");
+  if (descContainer) {
+    let styledDesc = rawDesc;
+    Object.keys(DISASTER_TAG_STYLES).forEach(typeName => {
+      const inlineStyle = DISASTER_TAG_STYLES[typeName];
+      const regex = new RegExp(`【${typeName}】`, "g");
+      styledDesc = styledDesc.replace(
+        regex,
+        `<span class="badge me-1 fw-bold rounded-pill" style="${inlineStyle} font-size: 0.76rem; padding: 0.2rem 0.55rem; vertical-align: middle;">【${typeName}】</span>`
+      );
+    });
+    descContainer.innerHTML = styledDesc || "無詳細描述";
+  }
+
   document.getElementById("cdmodal-has-img").innerText = selectedImageBase64 ? "已檢附現場照片" : "無相片";
 
   new bootstrap.Modal(document.getElementById("confirmDisasterSubmitModal")).show();
@@ -368,6 +495,7 @@ async function executeRealDisasterSubmit() {
   const distEl = document.getElementById("report-district");
   const locEl = document.getElementById("report-loc");
   const descEl = document.getElementById("report-desc");
+  const disasterTypeStr = selectedDisasterTypes.length > 0 ? selectedDisasterTypes.join("、") : "一般通報";
 
   const modalEl = document.getElementById("confirmDisasterSubmitModal");
   if (modalEl) {
@@ -383,6 +511,7 @@ async function executeRealDisasterSubmit() {
         district: distEl ? distEl.value : "中山區",
         location: locEl ? locEl.value.trim() : "",
         description: descEl ? descEl.value.trim() : "",
+        report_type: disasterTypeStr,
         image_url: selectedImageBase64
       })
     });
@@ -390,6 +519,8 @@ async function executeRealDisasterSubmit() {
     if (data.status === "success") {
       if (locEl) locEl.value = "";
       if (descEl) descEl.value = "";
+      selectedDisasterTypes = [];
+      renderDisasterTypeTags();
       removeSelectedImage();
       loadDisasterAccordion();
     }
@@ -404,6 +535,7 @@ function removeSelectedImage() {
   if (box) box.classList.add("d-none");
 }
 
+// 歷史紀錄載入與篩選
 async function loadSupplyHistory() {
   const tbody = document.getElementById("supply-history-tbody");
   if (!tbody) return;
@@ -411,65 +543,98 @@ async function loadSupplyHistory() {
   try {
     const res = await fetch("/api/supply-request");
     const json = await res.json();
-    
-    if (json.status === "success" && json.data && json.data.length > 0) {
+    if (json.status === "success" && json.data) {
       cachedSupplyData = json.data;
-      tbody.innerHTML = "";
-      json.data.forEach(row => {
-        const rTypeStr = String(row.resource_type || "物");
-        const typeTokens = rTypeStr.split(/[,、]/);
-        
-        let badgesHtml = "";
-        typeTokens.forEach(token => {
-          const t = token.trim();
-          if (t.includes("人") || t.includes("HUM")) {
-            badgesHtml += `<span class="badge bg-success me-1 px-2 py-1">人</span>`;
-          } else if (t.includes("機") || t.includes("EQP")) {
-            badgesHtml += `<span class="badge bg-warning text-dark me-1 px-2 py-1">機</span>`;
-          } else {
-            badgesHtml += `<span class="badge bg-primary me-1 px-2 py-1">物</span>`;
-          }
-        });
-
-        const cleanItemName = String(row.item_name || "").replace(/[()（）]/g, " ");
-        let shortItemName = cleanItemName;
-        if (cleanItemName.length > 22) {
-          shortItemName = cleanItemName.substring(0, 22) + "...";
-        }
-
-        let displayStatus = row.status || '收到申請';
-        if (displayStatus === '揀貨備料' || displayStatus === '核定備料') {
-          displayStatus = '審核核發';
-        }
-
-        tbody.innerHTML += `
-          <tr>
-            <td style="white-space: nowrap;"><span class="badge bg-light text-primary border font-monospace">${row.order_no}</span></td>
-            <td style="white-space: nowrap;" class="small font-monospace text-secondary">${row.created_at || '剛剛'}</td>
-            <td style="white-space: nowrap; text-align: center;">${badgesHtml}</td>
-            <td style="max-width: 250px;" class="text-truncate" title="${cleanItemName}">
-              <strong>${shortItemName}</strong>
-            </td>
-            <td class="small text-secondary text-truncate" style="max-width: 140px;" title="${row.detail_address || '未提供地址'}">
-              ${row.detail_address || "未提供地址"}
-            </td>
-            <td style="white-space: nowrap; text-align: center;">
-              <span class="badge bg-warning text-dark px-2 py-1">${displayStatus}</span>
-            </td>
-            <td style="white-space: nowrap; text-align: center;">
-              <button class="btn btn-sm btn-outline-primary px-3" onclick="openOrderDetailModal('${row.order_no}')">
-                查看
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-    } else {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">尚無調度申請紀錄。</td></tr>`;
+      filterAndRenderSupplyHistory();
     }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">讀取申請紀錄失敗</td></tr>`;
   }
+}
+
+function filterAndRenderSupplyHistory() {
+  const tbody = document.getElementById("supply-history-tbody");
+  if (!tbody) return;
+
+  const kw = (document.getElementById("supply-search-keyword")?.value || "").trim().toLowerCase();
+  const filterType = document.getElementById("supply-filter-type")?.value || "ALL";
+  const sortMode = document.getElementById("supply-sort-time")?.value || "desc";
+
+  let list = [...cachedSupplyData];
+
+  if (filterType !== "ALL") {
+    list = list.filter(r => (r.resource_type || "").includes(filterType));
+  }
+
+  if (kw) {
+    list = list.filter(r => 
+      (r.order_no || "").toLowerCase().includes(kw) ||
+      (r.item_name || "").toLowerCase().includes(kw) ||
+      (r.detail_address || "").toLowerCase().includes(kw)
+    );
+  }
+
+  list.sort((a, b) => {
+    const tA = new Date(a.created_at).getTime() || 0;
+    const tB = new Date(b.created_at).getTime() || 0;
+    return sortMode === "asc" ? (tA - tB) : (tB - tA);
+  });
+
+  tbody.innerHTML = "";
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">無符合條件之申請紀錄。</td></tr>`;
+    return;
+  }
+
+  list.forEach(row => {
+    const rTypeStr = String(row.resource_type || "物");
+    const typeTokens = rTypeStr.split(/[,、]/);
+    
+    let badgesHtml = "";
+    typeTokens.forEach(token => {
+      const t = token.trim();
+      if (t.includes("人") || t.includes("HUM")) {
+        badgesHtml += `<span class="badge bg-success me-1 px-2 py-1">人</span>`;
+      } else if (t.includes("機") || t.includes("EQP")) {
+        badgesHtml += `<span class="badge bg-warning text-dark me-1 px-2 py-1">機</span>`;
+      } else {
+        badgesHtml += `<span class="badge bg-primary me-1 px-2 py-1">物</span>`;
+      }
+    });
+
+    const cleanItemName = String(row.item_name || "").replace(/[()（）]/g, " ");
+    let shortItemName = cleanItemName;
+    if (cleanItemName.length > 22) {
+      shortItemName = cleanItemName.substring(0, 22) + "...";
+    }
+
+    let displayStatus = row.status || '收到申請';
+    if (displayStatus === '揀貨備料' || displayStatus === '核定備料') {
+      displayStatus = '審核核發';
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td style="white-space: nowrap;"><span class="badge bg-light text-primary border font-monospace">${row.order_no}</span></td>
+        <td style="white-space: nowrap;" class="small font-monospace text-secondary">${row.created_at || '剛剛'}</td>
+        <td style="white-space: nowrap; text-align: center;">${badgesHtml}</td>
+        <td style="max-width: 250px;" class="text-truncate" title="${cleanItemName}">
+          <strong>${shortItemName}</strong>
+        </td>
+        <td class="small text-secondary text-truncate" style="max-width: 140px;" title="${row.detail_address || '未提供地址'}">
+          ${row.detail_address || "未提供地址"}
+        </td>
+        <td style="white-space: nowrap; text-align: center;">
+          <span class="badge bg-warning text-dark px-2 py-1">${displayStatus}</span>
+        </td>
+        <td style="white-space: nowrap; text-align: center;">
+          <button class="btn btn-sm btn-outline-primary px-3" onclick="openOrderDetailModal('${row.order_no}')">
+            查看
+          </button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
 function openOrderDetailModal(orderNo) {
@@ -541,6 +706,7 @@ function openOrderDetailModal(orderNo) {
   new bootstrap.Modal(document.getElementById("orderProgressModal")).show();
 }
 
+// 載入災情通報進度與跑馬燈
 async function loadDisasterAccordion() {
   const container = document.getElementById("disasterAccordion");
   if (!container) return;
@@ -550,87 +716,157 @@ async function loadDisasterAccordion() {
     const json = await res.json();
     if (json.status === "success" && json.data) {
       cachedDisasterData = json.data;
-      container.innerHTML = "";
-      if (json.data.length === 0) {
-        container.innerHTML = `<div class="text-center py-4 text-muted">目前暫無災情案件記錄。</div>`;
-        return;
-      }
-
-      json.data.forEach((r, idx) => {
-        const collapseId = "collapseDisaster" + idx;
-        let badgeClass = "bg-primary";
-        if (r.status === "派員現場" || r.status === "處理中") badgeClass = "bg-warning text-dark";
-        else if (r.status === "已結案") badgeClass = "bg-success";
-
-        const imgBlock = r.image_url 
-          ? `
-            <div class="col-md-5 text-center p-2 border rounded bg-white">
-              <span class="d-block small text-muted mb-1"><i class="bi bi-camera me-1"></i>現場照片</span>
-              <img src="${r.image_url}" class="img-fluid rounded border shadow-sm" style="max-height: 140px; cursor: pointer; object-fit: cover;" onclick="openDisasterDetailModal('${r.report_no}')">
-            </div>
-          ` 
-          : `
-            <div class="col-md-5 d-flex align-items-center justify-content-center p-3 border rounded bg-white text-muted small">
-              <i class="bi bi-image text-secondary me-2"></i>無檢附現場照片
-            </div>
-          `;
-
-        let confirmActionHtml = "";
-        if (r.status === "派員現場") {
-          confirmActionHtml = `
-            <div class="alert alert-info py-2 px-3 mt-3 d-flex justify-content-between align-items-center">
-              <span class="small"><i class="bi bi-person-check-fill text-primary me-1"></i>志工已派駐現場搶修中！現場狀況若已排除，請予以驗收：</span>
-              <button class="btn btn-success btn-sm fw-bold px-3" onclick="confirmDisasterTaskResolved('${r.report_no}')">
-                <i class="bi bi-award me-1"></i>確認任務完成
-              </button>
-            </div>
-          `;
-        }
-
-        container.innerHTML += `
-          <div class="accordion-item mb-2 border rounded shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
-                <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                  <div>
-                    <span class="badge ${badgeClass} me-2" style="white-space: nowrap;">${r.status || '通報受理'}</span>
-                    <strong class="text-dark">案件編號 #${r.report_no} (${r.district} - ${r.location_description || '市區'})</strong>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <small class="text-muted font-monospace" style="white-space: nowrap;">${r.reported_at_str}</small>
-                  </div>
-                </div>
-              </button>
-            </h2>
-            <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#disasterAccordion">
-              <div class="accordion-body bg-light">
-                <div class="row g-3 align-items-stretch">
-                  <div class="col-md-7 d-flex flex-column justify-content-between">
-                    <div>
-                      <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge bg-warning text-dark">緊急度：${r.urgency || '待評估'}</span>
-                        <span class="small text-muted"><i class="bi bi-person me-1"></i>通報人：${r.user_name || '市民'}</span>
-                      </div>
-                      <p class="text-secondary small mb-2"><strong>災情描述：</strong>${r.description}</p>
-                    </div>
-                    <div class="pt-2 border-top text-start">
-                      <button class="btn btn-outline-danger btn-sm px-3 fw-bold" onclick="openDisasterDetailModal('${r.report_no}')">
-                        <i class="bi bi-eye me-1"></i> 查看進度與詳情
-                      </button>
-                    </div>
-                  </div>
-                  ${imgBlock}
-                </div>
-                ${confirmActionHtml}
-              </div>
-            </div>
-          </div>
-        `;
-      });
+      initDisasterLiveTicker(cachedDisasterData);
+      filterAndRenderDisasterAccordion();
     }
   } catch (e) {
     container.innerHTML = `<div class="text-center py-3 text-muted">目前暫無案件進度。</div>`;
   }
+}
+
+function initDisasterLiveTicker(reports) {
+  const summaryEl = document.getElementById("ticker-summary-text");
+  const trackEl = document.getElementById("tickerTrack");
+  if (!summaryEl || !trackEl) return;
+
+  if (reports.length === 0) {
+    summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：`;
+    trackEl.innerHTML = `<div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>`;
+    return;
+  }
+
+  summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">${reports.length}</span> 筆災情通報：`;
+
+  trackEl.innerHTML = reports.map(r => `
+    <div class="ticker-item py-2 text-truncate" style="height: 44px; line-height: 28px;">
+      <span class="badge bg-danger me-2">${r.district}</span>
+      <strong class="text-dark me-2">${r.location_description || '市區路段'}</strong>
+      <span class="text-secondary">${r.description}</span>
+      <small class="text-muted ms-2 font-monospace">(${r.reported_at_str})</small>
+    </div>
+  `).join("");
+
+  if (tickerInterval) clearInterval(tickerInterval);
+  let currentIndex = 0;
+  const itemHeight = 44;
+
+  if (reports.length > 1) {
+    tickerInterval = setInterval(() => {
+      currentIndex++;
+      if (currentIndex >= reports.length) {
+        currentIndex = 0;
+      }
+      trackEl.style.transform = `translateY(-${currentIndex * itemHeight}px)`;
+    }, 3200);
+  }
+}
+
+function filterAndRenderDisasterAccordion() {
+  const container = document.getElementById("disasterAccordion");
+  if (!container) return;
+
+  const kw = (document.getElementById("disaster-search-keyword")?.value || "").trim().toLowerCase();
+  const filterStatus = document.getElementById("disaster-filter-status")?.value || "ALL";
+  const sortMode = document.getElementById("disaster-sort-time")?.value || "desc";
+
+  let list = [...cachedDisasterData];
+
+  if (filterStatus !== "ALL") {
+    list = list.filter(r => (r.status || "").includes(filterStatus));
+  }
+
+  if (kw) {
+    list = list.filter(r => 
+      (r.report_no || "").toLowerCase().includes(kw) ||
+      (r.location_description || "").toLowerCase().includes(kw) ||
+      (r.district || "").toLowerCase().includes(kw) ||
+      (r.description || "").toLowerCase().includes(kw)
+    );
+  }
+
+  list.sort((a, b) => {
+    const tA = new Date(a.reported_at_str).getTime() || 0;
+    const tB = new Date(b.reported_at_str).getTime() || 0;
+    return sortMode === "asc" ? (tA - tB) : (tB - tA);
+  });
+
+  container.innerHTML = "";
+  if (list.length === 0) {
+    container.innerHTML = `<div class="text-center py-4 text-muted">無符合條件之通報案件。</div>`;
+    return;
+  }
+
+  list.forEach((r, idx) => {
+    const collapseId = "collapseDisaster" + idx;
+    let badgeClass = "bg-primary";
+    if (r.status === "派員現場" || r.status === "處理中") badgeClass = "bg-warning text-dark";
+    else if (r.status === "已結案") badgeClass = "bg-success";
+
+    const imgBlock = r.image_url 
+      ? `
+        <div class="col-md-5 text-center p-2 border rounded bg-white">
+          <span class="d-block small text-muted mb-1"><i class="bi bi-camera me-1"></i>現場照片</span>
+          <img src="${r.image_url}" class="img-fluid rounded border shadow-sm" style="max-height: 140px; cursor: pointer; object-fit: cover;" onclick="openDisasterDetailModal('${r.report_no}')">
+        </div>
+      ` 
+      : `
+        <div class="col-md-5 d-flex align-items-center justify-content-center p-3 border rounded bg-white text-muted small">
+          <i class="bi bi-image text-secondary me-2"></i>無檢附現場照片
+        </div>
+      `;
+
+    let confirmActionHtml = "";
+    if (r.status === "派員現場") {
+      confirmActionHtml = `
+        <div class="alert alert-info py-2 px-3 mt-3 d-flex justify-content-between align-items-center">
+          <span class="small"><i class="bi bi-person-check-fill text-primary me-1"></i>志工已派駐現場搶修中！現場狀況若已排除，請予以驗收：</span>
+          <button class="btn btn-success btn-sm fw-bold px-3" onclick="confirmDisasterTaskResolved('${r.report_no}')">
+            <i class="bi bi-award me-1"></i>確認任務完成
+          </button>
+        </div>
+      `;
+    }
+
+    container.innerHTML += `
+      <div class="accordion-item mb-2 border rounded shadow-sm">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+              <div>
+                <span class="badge ${badgeClass} me-2" style="white-space: nowrap;">${r.status || '通報受理'}</span>
+                <strong class="text-dark">案件編號 #${r.report_no} (${r.district} - ${r.location_description || '市區'})</strong>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted font-monospace" style="white-space: nowrap;">${r.reported_at_str}</small>
+              </div>
+            </div>
+          </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#disasterAccordion">
+          <div class="accordion-body bg-light">
+            <div class="row g-3 align-items-stretch">
+              <div class="col-md-7 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark">緊急度：${r.urgency || '待評估'}</span>
+                    <span class="small text-muted"><i class="bi bi-person me-1"></i>通報人：${r.user_name || '市民'}</span>
+                  </div>
+                  <p class="text-secondary small mb-2" style="white-space: pre-line;"><strong>災情描述：</strong>\n${r.description}</p>
+                </div>
+                <div class="pt-2 border-top text-start">
+                  <button class="btn btn-outline-danger btn-sm px-3 fw-bold" onclick="openDisasterDetailModal('${r.report_no}')">
+                    <i class="bi bi-eye me-1"></i> 查看進度與詳情
+                  </button>
+                </div>
+              </div>
+              ${imgBlock}
+            </div>
+            ${confirmActionHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  });
 }
 
 function openDisasterDetailModal(reportNo) {

@@ -281,3 +281,33 @@ body {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
   transform: scale(1.08);
 }
+
+/* ================= 需求 2：即時通報動態跑馬燈樣式 ================= */
+.live-ticker-card {
+  background-color: #ffffff;
+}
+
+.ticker-viewport {
+  height: 32px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ticker-track {
+  transition: transform 0.5s ease-in-out;
+}
+
+.ticker-item {
+  height: 32px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
