@@ -70,7 +70,7 @@ const resourceDictionary = {
 
 let pendingRequestItems = [];
 
-// 調整為優雅、柔和的標籤樣式：統一深灰文字搭配淡雅背景與同色細邊框
+// 柔和淺色標籤配色
 const DISASTER_TAG_STYLES = {
   "路樹災情": "background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;",
   "廣告招牌災情": "background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;",
@@ -83,18 +83,19 @@ const DISASTER_TAG_STYLES = {
 
 document.addEventListener("DOMContentLoaded", () => {
   updateSubCatOptions();
-  loadSupplyHistory();
-  loadDisasterAccordion();
+  loadSupplyHistory();       // 載入當前帳號的需求申請歷史
+  loadDisasterLiveTicker();  // 跑馬燈載入全體災情
+  loadDisasterAccordion();   // 載入當前帳號的災情通報歷史
   loadVolunteerTasks();
   loadBoardMessages();
   updateVolunteerUI();
 
-  // 歷史紀錄篩選事件
+  // 需求申請歷史紀錄篩選
   document.getElementById("supply-search-keyword")?.addEventListener("input", filterAndRenderSupplyHistory);
   document.getElementById("supply-filter-type")?.addEventListener("change", filterAndRenderSupplyHistory);
   document.getElementById("supply-sort-time")?.addEventListener("change", filterAndRenderSupplyHistory);
 
-  // 災情追蹤篩選事件
+  // 災情追蹤篩選
   document.getElementById("disaster-search-keyword")?.addEventListener("input", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-filter-status")?.addEventListener("change", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-sort-time")?.addEventListener("change", filterAndRenderDisasterAccordion);
@@ -158,45 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } catch (e) {}
     });
-  }
-
-  // 智慧防汛問答發送邏輯
-  const btnSendQa = document.getElementById("btn-send-qa");
-  const qaInput = document.getElementById("qa-input");
-  const chatBox = document.getElementById("chat-box");
-  if (btnSendQa && qaInput && chatBox) {
-    const sendQa = async () => {
-      const q = qaInput.value.trim();
-      if (!q) return;
-
-      chatBox.innerHTML += `<div class="mb-2 text-end"><span class="bg-primary text-white p-2 rounded d-inline-block">${q}</span></div>`;
-      qaInput.value = "";
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      const thinkingId = "thinking_" + Date.now();
-      chatBox.innerHTML += `<div class="mb-2 text-muted small" id="${thinkingId}"><strong class="text-primary">🤖 防汛助手：</strong>正在分析全區水情與防汛資料庫...</div>`;
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      try {
-        const res = await fetch("/api/qa-chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: q })
-        });
-        const data = await res.json();
-        document.getElementById(thinkingId)?.remove();
-
-        const engineBadge = data.engine === "gemini_ai" ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size:0.7rem;">Gemini AI 即時研判</span>` : "";
-        chatBox.innerHTML += `<div class="mb-2"><strong class="text-primary">🤖 防汛助手${engineBadge}：</strong>${data.answer}</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-      } catch (e) {
-        document.getElementById(thinkingId)?.remove();
-        chatBox.innerHTML += `<div class="mb-2"><strong class="text-primary">🤖 防汛助手：</strong>如遇暴雨緊急狀況，請優先前往二樓以上處所垂直避難，或前往預警避難專區啟動安全路線導航。</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-    };
-    btnSendQa.addEventListener("click", sendQa);
-    qaInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendQa(); });
   }
 });
 
@@ -449,7 +411,6 @@ function syncDisasterDesc() {
   descArea.value = newLines.join("\n");
 }
 
-// 彈出確認災情通報 Modal（字級精巧、統一柔和淡色框線與深色文字）
 function promptConfirmDisasterModal() {
   const district = document.getElementById("report-district")?.value || "中山區";
   const loc = document.getElementById("report-loc")?.value.trim() || "";
@@ -458,7 +419,6 @@ function promptConfirmDisasterModal() {
   document.getElementById("cdmodal-district").innerText = district;
   document.getElementById("cdmodal-loc").innerText = loc;
 
-  // 1. 災害種類：改為淡雅柔和的標籤樣式，中間以「、」區隔
   const typeContainer = document.getElementById("cdmodal-type");
   if (typeContainer) {
     if (selectedDisasterTypes.length === 0) {
@@ -471,7 +431,6 @@ function promptConfirmDisasterModal() {
     }
   }
 
-  // 2. 災情描述摘要：統一深色字體、字級恰當、淡色優雅標籤，去除突兀色塊
   const descContainer = document.getElementById("cdmodal-desc");
   if (descContainer) {
     let styledDesc = rawDesc;
@@ -522,7 +481,8 @@ async function executeRealDisasterSubmit() {
       selectedDisasterTypes = [];
       renderDisasterTypeTags();
       removeSelectedImage();
-      loadDisasterAccordion();
+      loadDisasterAccordion();  // 刷新個人通報進度
+      loadDisasterLiveTicker(); // 刷新全體跑馬燈
     }
   } catch (e) {}
 }
@@ -535,13 +495,13 @@ function removeSelectedImage() {
   if (box) box.classList.add("d-none");
 }
 
-// 歷史紀錄載入與篩選
+// 需求申請歷史紀錄：強制帶入 scope=mine，只查自己的帳號
 async function loadSupplyHistory() {
   const tbody = document.getElementById("supply-history-tbody");
   if (!tbody) return;
 
   try {
-    const res = await fetch("/api/supply-request");
+    const res = await fetch("/api/supply-request?scope=mine");
     const json = await res.json();
     if (json.status === "success" && json.data) {
       cachedSupplyData = json.data;
@@ -582,7 +542,7 @@ function filterAndRenderSupplyHistory() {
 
   tbody.innerHTML = "";
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">無符合條件之申請紀錄。</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">目前尚無您的需求申請紀錄。</td></tr>`;
     return;
   }
 
@@ -706,58 +666,65 @@ function openOrderDetailModal(orderNo) {
   new bootstrap.Modal(document.getElementById("orderProgressModal")).show();
 }
 
-// 載入災情通報進度與跑馬燈
+// 跑馬燈載入全體資料 (scope=all)，一次展示 2 筆
+async function loadDisasterLiveTicker() {
+  const summaryEl = document.getElementById("ticker-summary-text");
+  const trackEl = document.getElementById("tickerTrack");
+  if (!summaryEl || !trackEl) return;
+
+  try {
+    const res = await fetch("/api/disaster-report?scope=all");
+    const json = await res.json();
+    const reports = json.data || [];
+
+    if (reports.length === 0) {
+      summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：`;
+      trackEl.innerHTML = `<div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>`;
+      return;
+    }
+
+    summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">${reports.length}</span> 筆災情通報：`;
+
+    // 格式化為整齊的單行列表，每筆高度 44px
+    trackEl.innerHTML = reports.map(r => `
+      <div class="ticker-item py-2 text-truncate" style="height: 44px; line-height: 28px;">
+        <span class="badge bg-danger me-2">${r.district}</span>
+        <strong class="text-dark me-2">${r.location_description || '市區路段'}</strong>
+        <span class="text-secondary">${r.description}</span>
+        <small class="text-muted ms-2 font-monospace">(${r.reported_at_str})</small>
+      </div>
+    `).join("");
+
+    if (tickerInterval) clearInterval(tickerInterval);
+    let currentIndex = 0;
+    const itemHeight = 44; // 容器高度 88px 可完整容納 2 筆
+
+    if (reports.length > 2) {
+      tickerInterval = setInterval(() => {
+        currentIndex += 2;
+        if (currentIndex >= reports.length) {
+          currentIndex = 0;
+        }
+        trackEl.style.transform = `translateY(-${currentIndex * itemHeight}px)`;
+      }, 4000);
+    }
+  } catch(e) {}
+}
+
+// 通報處理進度追蹤：強制帶入 scope=mine，嚴格只查自己通報的案件
 async function loadDisasterAccordion() {
   const container = document.getElementById("disasterAccordion");
   if (!container) return;
 
   try {
-    const res = await fetch("/api/disaster-report");
+    const res = await fetch("/api/disaster-report?scope=mine");
     const json = await res.json();
     if (json.status === "success" && json.data) {
       cachedDisasterData = json.data;
-      initDisasterLiveTicker(cachedDisasterData);
       filterAndRenderDisasterAccordion();
     }
   } catch (e) {
     container.innerHTML = `<div class="text-center py-3 text-muted">目前暫無案件進度。</div>`;
-  }
-}
-
-function initDisasterLiveTicker(reports) {
-  const summaryEl = document.getElementById("ticker-summary-text");
-  const trackEl = document.getElementById("tickerTrack");
-  if (!summaryEl || !trackEl) return;
-
-  if (reports.length === 0) {
-    summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：`;
-    trackEl.innerHTML = `<div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>`;
-    return;
-  }
-
-  summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">${reports.length}</span> 筆災情通報：`;
-
-  trackEl.innerHTML = reports.map(r => `
-    <div class="ticker-item py-2 text-truncate" style="height: 44px; line-height: 28px;">
-      <span class="badge bg-danger me-2">${r.district}</span>
-      <strong class="text-dark me-2">${r.location_description || '市區路段'}</strong>
-      <span class="text-secondary">${r.description}</span>
-      <small class="text-muted ms-2 font-monospace">(${r.reported_at_str})</small>
-    </div>
-  `).join("");
-
-  if (tickerInterval) clearInterval(tickerInterval);
-  let currentIndex = 0;
-  const itemHeight = 44;
-
-  if (reports.length > 1) {
-    tickerInterval = setInterval(() => {
-      currentIndex++;
-      if (currentIndex >= reports.length) {
-        currentIndex = 0;
-      }
-      trackEl.style.transform = `translateY(-${currentIndex * itemHeight}px)`;
-    }, 3200);
   }
 }
 
@@ -792,7 +759,7 @@ function filterAndRenderDisasterAccordion() {
 
   container.innerHTML = "";
   if (list.length === 0) {
-    container.innerHTML = `<div class="text-center py-4 text-muted">無符合條件之通報案件。</div>`;
+    container.innerHTML = `<div class="text-center py-4 text-muted">目前尚無您通報的災情案件。</div>`;
     return;
   }
 
@@ -902,7 +869,7 @@ function openDisasterDetailModal(reportNo) {
   document.getElementById("dtime-1").innerHTML = `${baseTime}<br>(已受理)`;
   document.getElementById("dtime-2").innerHTML = stepLevel >= 2 ? `09:10<br>(已派員)` : `預估 09:10`;
   document.getElementById("dtime-3").innerHTML = stepLevel >= 3 ? `10:00<br>(排除中)` : `預估 10:00`;
-  document.getElementById("dtime-4").innerHTML = stepLevel >= 4 ? `11:00<br>(已結案)` : `待結案`;
+  document.getElementById("dtime-4").innerHTML = stepLevel >= 4 ? `11:00<br>(已送達)` : `待結案`;
 
   const imgCard = document.getElementById("dmodal-img-card");
   const imgEl = document.getElementById("dmodal-img");

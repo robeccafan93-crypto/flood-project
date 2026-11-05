@@ -2,20 +2,20 @@
 
 {% block content %}
 <div class="row">
-  <!-- 側欄 -->
+  <!-- 管理端專屬側欄 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
-      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action active"><i class="bi bi-box-seam me-2"></i>社區管理</a>
-      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action"><i class="bi bi-shuffle me-2"></i>需求協作</a>
-      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-coin me-2"></i>補助資源</a>
+      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action active"><i class="bi bi-clipboard2-check text-danger me-2"></i>案件處理</a>
+      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam text-warning me-2"></i>物資庫存</a>
+      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-people-fill text-success me-2"></i>志工管理</a>
     </div>
 
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
-      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clipboard2-data text-primary me-1"></i>社區庫存決策指標</h6>
+      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-primary me-1"></i>案件處置原則</h6>
       <ul class="list-unstyled small text-secondary mb-0">
-        <li class="mb-1">🔹 <strong>安全庫存 (SS)：</strong>防範暴雨突發缺口</li>
-        <li class="mb-1">🔹 <strong>即時供需平衡：</strong>掌握可外借餘裕</li>
-        <li class="mb-0">🔹 <strong>臨期預警：</strong>優先調撥 14 天內品項</li>
+        <li class="mb-1">🔹 <strong>災情通報：</strong>評定等級後即刻派遣志工</li>
+        <li class="mb-1">🔹 <strong>需求申請：</strong>核准後系統自動同步扣除庫存</li>
+        <li class="mb-0">🔹 <strong>時效控管：</strong>急迫案件優先在 15 分鐘內立案</li>
       </ul>
     </div>
   </div>
@@ -23,56 +23,34 @@
   <!-- 主內容 -->
   <div class="col-md-9">
     
-    <!-- 頂部四大指標看板 -->
+    <!-- 頂部指針看板 -->
     <div class="row g-3 mb-4 text-center">
-      <div class="col-md-3">
+      <div class="col-md-6">
         <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">安全庫存狀態</small>
-          <div class="fs-5 fw-bold text-success my-1"><i class="bi bi-shield-check me-1"></i>庫存充足比</div>
-          <div class="fs-4 fw-bold text-success">92%</div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">當前供需平衡</small>
-          <div class="fs-5 fw-bold text-primary my-1">供給量 &gt; 需求量</div>
-          <div class="fs-5 fw-bold text-primary">(+140)</div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">物資保存期限</small>
-          <div class="fs-4 fw-bold text-warning my-1">12 份即將過期</div>
-          <div class="small text-muted">(14天內)</div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">待審核案件數量</small>
+          <small class="text-muted fw-bold d-block mb-1">待處理災情案件</small>
           <div class="fs-3 fw-bold text-danger my-1" id="top-pending-count">1 件</div>
-          <div class="small text-danger fw-semibold">待派案處理</div>
+          <div class="small text-danger fw-semibold">待評定並派員現場</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
+          <small class="text-muted fw-bold d-block mb-1">待審核需求申請 (物資/設備/人力)</small>
+          <div class="fs-3 fw-bold text-primary my-1" id="pending-supply-count">0 筆</div>
+          <div class="small text-primary fw-semibold">待核准調度出庫</div>
         </div>
       </div>
     </div>
 
-    <!-- 三大模組標籤 -->
-    <ul class="nav nav-pills nav-fill mb-4 p-2 bg-white rounded border shadow-sm" id="adminManageTabs">
+    <!-- 標籤頁：災情通報 / 需求申請 -->
+    <ul class="nav nav-pills nav-fill mb-4 p-2 bg-white rounded border shadow-sm" id="caseTabs">
       <li class="nav-item">
-        <button class="nav-link active fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tab-cases">
-          <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> 災情案件與審核等級
+        <button class="nav-link active fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tab-disasters">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> 災情通報審核
         </button>
       </li>
       <li class="nav-item">
-        <button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tab-inventory">
-          <i class="bi bi-box-seam-fill text-primary me-1"></i> 社區庫存與物資審核
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tab-volunteers">
-          <i class="bi bi-person-fill-gear text-success me-1"></i> 志工人力排班與出勤
+        <button class="nav-link fw-bold py-2" data-bs-toggle="pill" data-bs-target="#tab-supplies">
+          <i class="bi bi-inbox-fill text-primary me-1"></i> 需求申請審核
         </button>
       </li>
     </ul>
@@ -80,13 +58,13 @@
     <div class="tab-content">
       
       <!-- 標籤 1：災情通報審核 -->
-      <div class="tab-pane fade show active" id="tab-cases">
+      <div class="tab-pane fade show active" id="tab-disasters">
         <div class="pro-card p-4 shadow-sm mb-4 bg-white border rounded">
           <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-              <i class="bi bi-check2-square text-primary fs-5"></i> 災情通報審核工作台
+              <i class="bi bi-check2-square text-danger fs-5"></i> 災情通報審核工作台
             </h5>
-            <span class="badge bg-warning text-dark px-3 py-2 fw-bold" id="badge-pending-count">待處理案件：1 件</span>
+            <span class="badge bg-danger px-3 py-2 fw-bold" id="badge-pending-count">待處理案件：1 件</span>
           </div>
 
           <div class="table-responsive">
@@ -131,24 +109,22 @@
         </div>
       </div>
 
-      <!-- 標籤 2：社區庫存（更新篩選標籤為「全部資源」） -->
-      <div class="tab-pane fade" id="tab-inventory">
-        
-        <!-- 待審核民眾物資申請 -->
-        <div class="pro-card p-4 shadow-sm bg-white border rounded mb-4 border-start border-warning border-4">
+      <!-- 標籤 2：需求申請審核 (原物資申請) -->
+      <div class="tab-pane fade" id="tab-supplies">
+        <div class="pro-card p-4 shadow-sm bg-white border rounded mb-4 border-start border-primary border-4">
           <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <div>
-              <h5 class="fw-bold text-dark mb-0"><i class="bi bi-inbox-fill text-warning me-2"></i>待審核民眾物資申請</h5>
-              <small class="text-muted">連動民眾端線上調度申請</small>
+              <h5 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-2"></i>待審核民眾需求申請</h5>
+              <small class="text-muted">連動民眾端線上調度申請，核准將自動扣減庫存</small>
             </div>
-            <span class="badge bg-warning text-dark" id="pending-supply-badge">待審核 0 筆</span>
+            <span class="badge bg-primary px-3 py-2" id="pending-supply-badge">待審核 0 筆</span>
           </div>
 
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light small">
                 <tr>
-                  <th style="white-space: nowrap;">調度單號</th>
+                  <th style="white-space: nowrap;">申請單號</th>
                   <th style="white-space: nowrap;">申請人</th>
                   <th>申請品項清單與數量</th>
                   <th>受援地址</th>
@@ -156,78 +132,7 @@
                 </tr>
               </thead>
               <tbody id="admin-pending-supplies-tbody" class="small">
-                <tr><td colspan="5" class="text-center text-muted py-3">目前無待審核之物資調度申請。</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 社區庫存表 (篩選改為「全部資源」) -->
-        <div class="pro-card p-4 shadow-sm bg-white border rounded">
-          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
-            <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-boxes text-primary me-2"></i>社區庫存</h4>
-            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-              <!-- 需求 2：改為「全部資源」 -->
-              <select id="filter-category" class="form-select form-select-sm border-primary fw-bold text-primary" style="width: 140px;">
-                <option value="ALL">全部資源</option>
-                <option value="機">機具</option>
-                <option value="物">物資</option>
-              </select>
-              <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddSupply">
-                <i class="bi bi-plus-lg me-1"></i> 新增庫存物資/設備
-              </button>
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-hover align-middle table-custom mb-0">
-              <thead>
-                <tr>
-                  <th style="white-space: nowrap;">類別</th>
-                  <th>名稱與規格</th>
-                  <th>存放位置</th>
-                  <th style="white-space: nowrap;">供給量</th>
-                  <th style="white-space: nowrap;">安全庫存 (SS)</th>
-                  <th style="white-space: nowrap;">保存期限</th>
-                  <th style="white-space: nowrap; text-align: center;">狀態</th>
-                </tr>
-              </thead>
-              <tbody id="resource-table-body">
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- 標籤 3：志工人力排班與出勤看板 -->
-      <div class="tab-pane fade" id="tab-volunteers">
-        <div class="pro-card p-4 shadow-sm bg-white border rounded">
-          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-            <div>
-              <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-people-fill text-success"></i> 志工人力排班與出勤管制看板
-              </h5>
-              <small class="text-muted">支援與災情審核即時連動，亦可手動建立緊急任務</small>
-            </div>
-            <button class="btn btn-success btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateTask">
-              <i class="bi bi-plus-lg me-1"></i> 新增志工出勤任務
-            </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-hover align-middle table-custom mb-0">
-              <thead>
-                <tr>
-                  <th style="white-space: nowrap; width: 90px;">任務編號</th>
-                  <th style="white-space: nowrap; width: 130px;">連動災情</th>
-                  <th>任務標題</th>
-                  <th>地點</th>
-                  <th style="white-space: nowrap; width: 110px; text-align: center;">出勤狀態</th>
-                  <th style="white-space: nowrap; width: 90px; text-align: center;">獎勵點數</th>
-                  <th style="white-space: nowrap; width: 90px; text-align: center;">任務詳情</th>
-                </tr>
-              </thead>
-              <tbody id="admin-volunteers-tbody">
+                <tr><td colspan="5" class="text-center text-muted py-3">目前無待審核之需求申請。</td></tr>
               </tbody>
             </table>
           </div>
@@ -236,204 +141,29 @@
 
     </div>
 
-  </div>
-</div>
-
-<!-- 彈窗 A：需求 1 新增物資/設備彈窗 (標題簡化、存放位置下拉選單、初始供給數量改為數量) -->
-<div class="modal fade" id="modalAddSupply" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content pro-card border-0 shadow-lg">
-      <div class="modal-header bg-primary text-white">
-        <!-- 需求 1：標題改為「新增物資/設備」 -->
-        <h5 class="modal-title fw-bold"><i class="bi bi-box-fill me-2"></i>新增物資/設備</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <form id="form-add-supply-item">
-          <div class="row g-2 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold small">資源類別</label>
-              <!-- 需求 2：類別寫物資、機具 -->
-              <select class="form-select form-select-sm" id="new-item-cat">
-                <option value="物">物資</option>
-                <option value="機">機具</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold small">物資/機具名稱 <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" id="new-item-name" placeholder="例如: 高密度防汛沙包" required>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">存放保管位置 <span class="text-danger">*</span></label>
-            <!-- 需求 1：存放保管位置採用下拉選單 -->
-            <select class="form-select form-select-sm" id="new-item-loc" required>
-              <option value="大同區防汛備災中心" selected>大同區防汛備災中心</option>
-              <option value="里民活動中心地下室">里民活動中心地下室</option>
-              <option value="社區活動中心儲藏室">社區活動中心儲藏室</option>
-              <option value="重慶北路抽水站整備庫">重慶北路抽水站整備庫</option>
-              <option value="各地下停車場管制室">各地下停車場管制室</option>
-              <option value="中山區防汛整備庫">中山區防汛整備庫</option>
-            </select>
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <!-- 需求 1：初始供給數量改成「數量」 -->
-              <label class="form-label fw-semibold small">數量</label>
-              <input type="number" class="form-control form-control-sm" id="new-item-qty" value="50" min="1" required>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold small">安全庫存線 (SS)</label>
-              <input type="number" class="form-control form-control-sm" id="new-item-ss" value="30" min="1" required>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">儲存入庫</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 彈窗 B：手動新增志工任務彈窗 -->
-<div class="modal fade" id="modalCreateTask" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content pro-card border-0 shadow-lg">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill text-success me-2"></i>手動發布志工出勤排班任務</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <form id="form-create-task">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">任務名稱/主題 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="task-title" placeholder="例如: 中山北路二段低窪店家沙包堆疊防護" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">支援詳細地點 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="task-loc" placeholder="例如: 中山北路二段 45 號一帶" required>
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label fw-semibold">所屬行政區</label>
-              <input type="text" class="form-control" id="task-district" value="{{ session.get('district', '中山區') }}" readonly>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">獎勵星星點數</label>
-              <input type="number" class="form-control" id="task-points" value="20" min="5" max="100">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">任務詳細說明</label>
-            <textarea class="form-control" id="task-desc" rows="2" placeholder="說明現場狀況與所需技能..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-success w-100 py-2 fw-bold">發布至志工出勤大廳</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 彈窗 C：志工任務詳細資訊彈窗 -->
-<div class="modal fade" id="volunteerTaskDetailModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content pro-card border-0 shadow-lg">
-      <div class="modal-header bg-success text-white py-3">
-        <h5 class="modal-title fw-bold"><i class="bi bi-info-circle me-2"></i>志工出勤任務詳細資訊</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4 bg-light">
-        <div class="card border-0 shadow-sm p-3 bg-white mb-2 small">
-          <div class="mb-2"><strong>任務識別碼：</strong><span class="font-monospace text-primary fw-bold" id="vtmodal-id"></span></div>
-          <div class="mb-2"><strong>任務名稱：</strong><span class="fw-bold text-dark fs-6" id="vtmodal-title"></span></div>
-          <div class="mb-2"><strong>連動通報案件：</strong><span class="badge bg-danger" id="vtmodal-report"></span></div>
-          <div class="mb-2"><strong>出勤執行地點：</strong><span class="text-secondary" id="vtmodal-loc"></span></div>
-          <div class="mb-2"><strong>執勤狀態：</strong><span class="badge bg-warning text-dark" id="vtmodal-status"></span></div>
-          <div class="mb-2"><strong>指派/接案志工：</strong><span class="fw-bold text-dark" id="vtmodal-user"></span></div>
-          <div class="mb-2"><strong>核定獎勵點數：</strong><span class="badge bg-success" id="vtmodal-points"></span></div>
-          <div class="pt-2 border-top">
-            <strong>現場任務與防護需求說明：</strong>
-            <p class="mb-0 text-muted mt-1" id="vtmodal-desc"></p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-let cachedVolunteerTasks = [];
-
 document.addEventListener("DOMContentLoaded", () => {
-  renderTable("ALL");
   loadNewDisasterReports();
-  loadAdminVolunteers();
   loadAdminPendingSupplies();
-
-  // 新增庫存
-  document.getElementById("form-add-supply-item")?.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const payload = {
-      name: document.getElementById("new-item-name").value.trim(),
-      location: document.getElementById("new-item-loc").value.trim(),
-      quantity: parseInt(document.getElementById("new-item-qty").value) || 1,
-      status: "充足"
-    };
-
-    const res = await fetch("/api/community-resources", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    
-    proResources.unshift({
-      cat: document.getElementById("new-item-cat").value,
-      name: payload.name,
-      loc: payload.location,
-      qty: payload.quantity,
-      ss: parseInt(document.getElementById("new-item-ss").value) || 20,
-      extra: "常態保養良好",
-      status: "充足 (可調撥)"
-    });
-    renderTable(document.getElementById("filter-category").value);
-    document.getElementById("form-add-supply-item").reset();
-    bootstrap.Modal.getInstance(document.getElementById("modalAddSupply")).hide();
-  });
-
-  // 發布任務
-  document.getElementById("form-create-task")?.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const payload = {
-      title: document.getElementById("task-title").value.trim(),
-      location: document.getElementById("task-loc").value.trim(),
-      district: document.getElementById("task-district").value.trim(),
-      reward_points: parseInt(document.getElementById("task-points").value) || 20,
-      description: document.getElementById("task-desc").value.trim()
-    };
-
-    await fetch("/api/volunteer-tasks/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    document.getElementById("form-create-task").reset();
-    bootstrap.Modal.getInstance(document.getElementById("modalCreateTask")).hide();
-    loadAdminVolunteers();
-  });
 });
 
 async function loadAdminPendingSupplies() {
   const tbody = document.getElementById("admin-pending-supplies-tbody");
   if (!tbody) return;
   try {
-    const res = await fetch("/api/supply-request");
+    const res = await fetch("/api/supply-request?scope=all");
     const json = await res.json();
     if (json.status === "success" && json.data) {
       const pendings = json.data.filter(r => r.status === "收到申請");
+      document.getElementById("pending-supply-count").innerText = `${pendings.length} 筆`;
       document.getElementById("pending-supply-badge").innerText = `待審核 ${pendings.length} 筆`;
       if (pendings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">目前無待審核之物資調度申請。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">目前無待審核之需求申請。</td></tr>`;
         return;
       }
 
@@ -467,20 +197,11 @@ async function auditSupplyOrder(orderNo, action) {
     body: JSON.stringify({ order_no: orderNo, action: action })
   });
   loadAdminPendingSupplies();
-  
-  if (action === "approve") {
-    proResources.forEach(r => {
-      if (r.name.includes("沙包")) r.qty = Math.max(0, r.qty - 10);
-      if (r.name.includes("擋板")) r.qty = Math.max(0, r.qty - 1);
-      if (r.name.includes("抽水")) r.qty = Math.max(0, r.qty - 1);
-    });
-    renderTable(document.getElementById("filter-category").value);
-  }
 }
 
 async function loadNewDisasterReports() {
   try {
-    const res = await fetch("/api/disaster-report");
+    const res = await fetch("/api/disaster-report?scope=all");
     const json = await res.json();
     if (json.status === "success" && json.data) {
       const tbody = document.getElementById("community-audit-tbody");
@@ -510,6 +231,8 @@ async function loadNewDisasterReports() {
               <select class="form-select form-select-sm" id="vol-${task.report_no}" style="min-width: 170px;">
                 <option value="張師傅 (水電專長)">張師傅 (水電專長)</option>
                 <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
+                <option value="陳隊員 (醫療急救)">陳隊員 (醫療急救)</option>
+                <option value="林司機 (車輛駕駛)">林司機 (車輛駕駛)</option>
               </select>
             </td>
             <td style="white-space: nowrap; text-align: center;">
@@ -545,7 +268,6 @@ async function auditCase(reportNo, action) {
   });
   document.getElementById(`task-${reportNo}`)?.remove();
   updateCounts();
-  loadAdminVolunteers();
 }
 
 function updateCounts() {
@@ -553,95 +275,5 @@ function updateCounts() {
   document.getElementById("top-pending-count").innerText = `${remain} 件`;
   document.getElementById("badge-pending-count").innerText = `待處理案件：${remain} 件`;
 }
-
-async function loadAdminVolunteers() {
-  const tbody = document.getElementById("admin-volunteers-tbody");
-  if (!tbody) return;
-  try {
-    const res = await fetch("/api/volunteer-tasks");
-    const json = await res.json();
-    if (json.status === "success" && json.data) {
-      cachedVolunteerTasks = json.data;
-      tbody.innerHTML = "";
-      if (json.data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">目前無志工出勤任務。</td></tr>`;
-        return;
-      }
-      json.data.forEach(v => {
-        tbody.innerHTML += `
-          <tr>
-            <td style="white-space: nowrap;"><strong class="text-dark">#${v.task_id}</strong></td>
-            <td style="white-space: nowrap;"><span class="badge bg-danger">${v.report_id || '社區排班'}</span></td>
-            <td><strong>${v.title}</strong></td>
-            <td>${v.district} ${v.location}</td>
-            <td style="white-space: nowrap; text-align: center;"><span class="badge ${v.status.includes('已完成') ? 'bg-success' : 'bg-warning text-dark'}">${v.status}</span></td>
-            <td style="white-space: nowrap; text-align: center;">+${v.reward_points} 點</td>
-            <td style="white-space: nowrap; text-align: center;">
-              <button class="btn btn-outline-primary btn-sm px-2 py-0" onclick="openVolunteerTaskDetail(${v.task_id})">
-                查看詳情
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-    }
-  } catch(e) {}
-}
-
-function openVolunteerTaskDetail(taskId) {
-  const t = cachedVolunteerTasks.find(item => item.task_id === taskId);
-  if (!t) return;
-
-  document.getElementById("vtmodal-id").innerText = `#TASK-${t.task_id}`;
-  document.getElementById("vtmodal-title").innerText = t.title;
-  document.getElementById("vtmodal-report").innerText = t.report_id || "社區手動排班";
-  document.getElementById("vtmodal-loc").innerText = `${t.district} ${t.location}`;
-  document.getElementById("vtmodal-status").innerText = t.status || "招募中";
-  document.getElementById("vtmodal-user").innerText = t.assigned_user || "暫無志工接單（招募中）";
-  document.getElementById("vtmodal-points").innerText = `+${t.reward_points} 點數`;
-  document.getElementById("vtmodal-desc").innerText = t.description || "請志工攜帶防水雨鞋、工程手套及照明設備前往集合處支援。";
-
-  new bootstrap.Modal(document.getElementById("volunteerTaskDetailModal")).show();
-}
-
-const proResources = [
-  { cat: "物", name: "高密度防汛沙包", loc: "大同區防汛備災中心", qty: 350, ss: 200, extra: "永久耐磨型", status: "充足 (可調撥)" },
-  { cat: "物", name: "箱裝應急純淨水", loc: "里民活動中心地下室", qty: 45, ss: 50, extra: "保存期限: 2026-09-28 (臨期!)", status: "低於安全庫存" },
-  { cat: "物", name: "常溫防災乾糧箱", loc: "社區活動中心儲藏室", qty: 120, ss: 80, extra: "保存期限: 2027-02-10", status: "充足 (可調撥)" },
-  { cat: "機", name: "移動式沉水抽水泵浦", loc: "重慶北路抽水站整備庫", qty: 4, ss: 3, extra: "保養完備", status: "充足 (可調撥)" },
-  { cat: "機", name: "鋁合金快速擋板", loc: "各地下停車場管制室", qty: 18, ss: 20, extra: "保養良好", status: "供需缺口" }
-];
-
-// 需求 2：類別欄位顯示「物資」、「機具」
-function renderTable(filter) {
-  const tbody = document.getElementById("resource-table-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  const list = filter === "ALL" ? proResources : proResources.filter(r => r.cat === filter);
-  list.forEach(r => {
-    let catBadge = '<span class="badge bg-primary">物資</span>';
-    if (r.cat === '機') catBadge = '<span class="badge bg-warning text-dark">機具</span>';
-
-    const isShortage = r.qty < r.ss;
-    const statusDisplay = isShortage ? '<span class="badge bg-danger">低於安全庫存</span>' : '<span class="badge bg-success">充足 (可調撥)</span>';
-
-    tbody.innerHTML += `
-      <tr>
-        <td style="white-space: nowrap;">${catBadge}</td>
-        <td class="fw-bold text-dark">${r.name}</td>
-        <td class="text-secondary small">${r.loc}</td>
-        <td class="fw-bold fs-6 ${r.cat !== '人' && r.qty < r.ss ? 'text-danger' : 'text-primary'}" style="white-space: nowrap;">${r.qty}</td>
-        <td class="text-muted small" style="white-space: nowrap;">${r.ss}</td>
-        <td class="small ${r.extra.includes('臨期') ? 'text-danger fw-bold' : 'text-secondary'}" style="white-space: nowrap;">${r.extra}</td>
-        <td style="white-space: nowrap; text-align: center;">${statusDisplay}</td>
-      </tr>
-    `;
-  });
-}
-
-document.getElementById("filter-category")?.addEventListener("change", function() {
-  renderTable(this.value);
-});
 </script>
 {% endblock %}

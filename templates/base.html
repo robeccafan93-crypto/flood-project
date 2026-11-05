@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}臺北市智慧淹水預警平台{% endblock %}</title>
+  <title>{% block title %}智援臺北{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,12 +12,12 @@
 </head>
 <body>
 
-  <!-- 頂部導航列 -->
+  <!-- 頂部導航列 (平台名稱改為「智援臺北」，管理端三大新分區) -->
   <nav class="navbar navbar-expand-lg navbar-custom sticky-top py-2 px-4 shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-2 me-4" href="{{ url_for('index') }}">
-        <i class="bi bi-water text-info fs-4"></i>
-        <span>臺北市智慧淹水預警平台</span>
+        <i class="bi bi-shield-shaded text-info fs-4"></i>
+        <span>智援臺北</span>
       </a>
       
       <button class="navbar-toggler border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
@@ -43,17 +43,16 @@
               </ul>
             </li>
 
-            <!-- 社區物資 -->
+            <!-- 管理端三大新分區 (案件處理、物資庫存、志工管理) -->
             {% if session.get('role') == 'community' %}
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle text-warning" href="#" data-bs-toggle="dropdown">
-                <i class="bi bi-boxes me-1"></i> 社區物資
+                <i class="bi bi-gear-fill me-1"></i> 管理端
               </a>
               <ul class="dropdown-menu dropdown-menu-custom shadow">
-                <li><a class="dropdown-item" href="{{ url_for('community_manage') }}"><i class="bi bi-box-seam me-2 text-warning"></i> 社區管理</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('community_demand') }}"><i class="bi bi-shuffle me-2 text-primary"></i> 需求協作</a></li>
-                <li><hr class="dropdown-divider border-secondary"></li>
-                <li><a class="dropdown-item" href="{{ url_for('subsidy_resource') }}"><i class="bi bi-coin me-2 text-warning"></i> 補助資源</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('community_manage') }}"><i class="bi bi-clipboard2-check text-danger me-2"></i> 案件處理</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('community_demand') }}"><i class="bi bi-box-seam text-warning me-2"></i> 物資庫存</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('subsidy_resource') }}"><i class="bi bi-people-fill text-success me-2"></i> 志工管理</a></li>
               </ul>
             </li>
             {% endif %}
@@ -126,7 +125,7 @@
     </div>
   </div>
 
-  <!-- 需求 6：個人資料彈窗（完整接回志工專長技能項目設定） -->
+  <!-- 個人資料彈窗 (完整保留志工專長技能項目設定) -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -164,7 +163,7 @@
               </select>
             </div>
 
-            <!-- 需求 6：志工專長技能項目設定（完全復原） -->
+            <!-- 完整保留：志工專長技能項目設定 (圖一復原) -->
             <div class="mb-3 p-3 bg-light rounded border">
               <label class="form-label text-dark small fw-bold d-block mb-2">志工專長技能項目設定</label>
               <div class="row g-2">
@@ -237,14 +236,14 @@
   {% endif %}
 
   <footer class="bg-dark text-secondary text-center py-3 mt-auto border-top border-secondary">
-    <small>© 2026 臺北市智慧淹水預警平台</small>
+    <small>© 2026 智援臺北</small>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     function triggerEmergencyAlert(district, detail) {
-      document.getElementById('alert-district-name').innerText = district || '臺北市警戒區域';
+      document.getElementById('alert-district-name').innerText = district || '警戒區域';
       if (detail) document.getElementById('alert-detail-msg').innerText = detail;
       const modal = new bootstrap.Modal(document.getElementById('floodEmergencyModal'));
       modal.show();

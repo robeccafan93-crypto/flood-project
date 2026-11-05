@@ -2,46 +2,86 @@
 
 {% block content %}
 <div class="row">
-  <!-- 社區端三層式側欄 (固定佔 3 格) -->
+  <!-- 管理端專屬側欄 -->
   <div class="col-md-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
-      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam me-2"></i>社區管理</a>
-      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action active"><i class="bi bi-shuffle me-2"></i>需求協作</a>
-      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-coin me-2"></i>補助資源</a>
+      <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action"><i class="bi bi-clipboard2-check text-danger me-2"></i>案件處理</a>
+      <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action active"><i class="bi bi-box-seam text-warning me-2"></i>物資庫存</a>
+      <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-people-fill text-success me-2"></i>志工管理</a>
     </div>
 
-    <!-- 流程圖一：調撥作業原則 -->
+    <!-- 庫存調撥作業原則 -->
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
       <h6 class="fw-bold text-dark mb-2"><i class="bi bi-signpost-split text-primary me-1"></i>跨區調撥作業原則</h6>
       <div class="small text-muted mb-2">依據跨區調撥流程圖作業：</div>
       <ol class="small text-secondary ps-3 mb-0">
-        <li class="mb-1">進入庫存管理</li>
-        <li class="mb-1">檢查是否低於安全線</li>
-        <li class="mb-1">發起跨區調撥申請</li>
-        <li class="mb-1">系統搜尋鄰近社區需求</li>
-        <li class="mb-1">主動聯繫需求社區</li>
-        <li class="mb-0">建立跨區調撥紀錄</li>
+        <li class="mb-1">盤點庫存安全線 (SS)</li>
+        <li class="mb-1">庫存餘裕主動支援他區</li>
+        <li class="mb-1">遇突發缺口提出調撥需求</li>
+        <li class="mb-0">建立調撥追蹤與簽收紀錄</li>
       </ol>
     </div>
   </div>
-  <!-- 側欄結束 -->
 
-  <!-- 主內容 (獨立佔 9 格) -->
+  <!-- 主內容 -->
   <div class="col-md-9">
     
-    <!-- 模組 A: 我方社區主動協助他區 -->
-    <div class="pro-card p-4 shadow-sm mb-4 border-start border-success border-4">
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <!-- 模組 A: 所有物資庫存量 -->
+    <div class="pro-card p-4 shadow-sm bg-white border rounded mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
         <div>
-          <h5 class="fw-bold text-dark mb-1"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>跨區物資調撥</h5>
-          <small class="text-muted">本社區目前安全庫存有餘裕，依調撥流程發起組內組間跨區互助</small>
+          <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-boxes text-primary me-2"></i>所有物資庫存量</h5>
+          <small class="text-muted">即時監控社區防汛物資、設備庫存與安全線 (SS)</small>
         </div>
-        <button class="btn btn-success btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalHelpOthers">
-          <i class="bi bi-gift me-1"></i> 發起主動支援調撥
-        </button>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+          <select id="filter-category" class="form-select form-select-sm border-primary fw-bold text-primary" style="width: 130px;">
+            <option value="ALL">全部資源</option>
+            <option value="機">機具設備</option>
+            <option value="物">物資備品</option>
+          </select>
+          <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddSupply">
+            <i class="bi bi-plus-lg me-1"></i> 新增庫存物資/設備
+          </button>
+        </div>
       </div>
 
-      <div class="row g-3">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle table-custom mb-0">
+          <thead>
+            <tr>
+              <th style="white-space: nowrap;">類別</th>
+              <th>名稱與規格</th>
+              <th>存放位置</th>
+              <th style="white-space: nowrap;">當前數量</th>
+              <th style="white-space: nowrap;">安全庫存 (SS)</th>
+              <th style="white-space: nowrap;">備註 / 效期</th>
+              <th style="white-space: nowrap; text-align: center;">狀態</th>
+            </tr>
+          </thead>
+          <tbody id="resource-table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 模組 B: 跨區物資調撥 -->
+    <div class="pro-card p-4 shadow-sm mb-4 border-start border-success border-4 bg-white">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div>
+          <h5 class="fw-bold text-dark mb-1"><i class="bi bi-arrow-left-right text-success me-2"></i>跨區物資調撥</h5>
+          <small class="text-muted">安全庫存高於基準時可主動調撥支援鄰近社區，或向跨區申請物資調配</small>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalHelpOthers">
+            <i class="bi bi-gift me-1"></i> 發起主動調撥
+          </button>
+          <button class="btn btn-outline-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalDemand">
+            <i class="bi bi-send me-1"></i> 提出調撥申請
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
         <div class="col-md-6">
           <div class="p-3 bg-light rounded border h-100">
             <div class="d-flex justify-content-between align-items-center">
@@ -49,50 +89,39 @@
               <span class="badge bg-success">高於安全線</span>
             </div>
             <div class="small text-secondary mt-2">
-              <div class="mb-1">🔹 防汛專用沙包：餘裕量 <strong>150 包</strong> (可支援他區)</div>
-              <div>🔹 應急泡麵乾糧：餘裕量 <strong>40 箱</strong> (可支援他區)</div>
+              <div class="mb-1">🔹 高密度防汛沙包：餘裕量 <strong>150 包</strong> (可支援他區)</div>
+              <div>🔹 應急純淨水：餘裕量 <strong>40 箱</strong> (可支援他區)</div>
             </div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="p-3 bg-light rounded border h-100">
-            <strong class="text-dark">系統配對鄰近有缺額社區：</strong>
+            <strong class="text-dark">鄰近社區缺額媒合：</strong>
             <div class="small text-secondary mt-2">
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <span>📍 <strong>士林區後港里</strong>：缺沙包 80 包</span>
                 <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="quickAssist('士林區後港里', '防汛沙包 80 包')">聯繫調撥</button>
               </div>
               <div class="d-flex justify-content-between align-items-center">
-                <span>📍 <strong>中山區民安里</strong>：缺乾糧 20 箱</span>
-                <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="quickAssist('中山區民安里', '泡麵乾糧 20 箱')">聯繫調撥</button>
+                <span>📍 <strong>中山區民安里</strong>：缺純淨水 20 箱</span>
+                <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="quickAssist('中山區民安里', '箱裝應急純淨水 20 箱')">聯繫調撥</button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 模組 B: 調度即時總覽表格 (已刪除「調撥方向」欄) -->
-    <div class="pro-card p-4 shadow-sm mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-        <div>
-          <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-arrow-left-right text-primary me-2"></i>跨社區調撥與互助紀錄</h5>
-          <small class="text-muted">完整記錄主動協助與被動調撥，達到全區庫存互助</small>
-        </div>
-        <button class="btn btn-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalDemand">
-          <i class="bi bi-send-exclamation me-1"></i> 我方提出需求申請
-        </button>
-      </div>
-
+      <!-- 調撥紀錄表 -->
+      <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-clock-history me-1"></i>跨社區物資調撥紀錄</h6>
       <div class="table-responsive">
-        <table class="table table-hover align-middle table-custom">
+        <table class="table table-hover align-middle table-custom mb-0">
           <thead>
             <tr>
               <th>調撥來源 (支援方)</th>
               <th>需求方 (受援社區)</th>
               <th>互助品項</th>
               <th>數量</th>
-              <th>時機型態</th>
+              <th>調撥型態</th>
               <th>配送狀態</th>
             </tr>
           </thead>
@@ -100,7 +129,7 @@
             <tr class="table-success-subtle">
               <td class="fw-bold text-success">大同區 (本社區)</td>
               <td class="fw-bold text-danger">士林區後港里</td>
-              <td>防汛專用沙包</td>
+              <td>高密度防汛沙包</td>
               <td>80 包</td>
               <td><span class="badge bg-success">平時餘裕調撥</span></td>
               <td><span class="badge bg-primary">建立調撥記錄 (派送中)</span></td>
@@ -108,7 +137,7 @@
             <tr>
               <td class="fw-bold text-success">大同區斯文里</td>
               <td class="fw-bold text-danger">大同區揚雅里</td>
-              <td>移動式抽水泵浦</td>
+              <td>移動式沉水抽水泵浦</td>
               <td>1 台</td>
               <td><span class="badge bg-success">平時安全庫存調撥</span></td>
               <td><span class="badge bg-success">已送達簽收</span></td>
@@ -116,9 +145,9 @@
             <tr>
               <td class="fw-bold text-success">北投區奇岩社區</td>
               <td class="fw-bold text-danger">大同區 (本社區)</td>
-              <td>鋁合金防水擋板</td>
-              <td>10 片</td>
-              <td><span class="badge bg-danger">緊急供需無法匹配</span></td>
+              <td>鋁合金快速擋板</td>
+              <td>10 組</td>
+              <td><span class="badge bg-danger">緊急調撥</span></td>
               <td><span class="badge bg-success">已送達簽收</span></td>
             </tr>
           </tbody>
@@ -129,25 +158,76 @@
   </div>
 </div>
 
-<!-- 主動協助調撥彈窗 -->
+<!-- 彈窗：新增物資/設備 -->
+<div class="modal fade" id="modalAddSupply" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content pro-card border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-box-fill me-2"></i>新增物資/設備</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="form-add-supply-item">
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">資源類別</label>
+              <select class="form-select form-select-sm" id="new-item-cat">
+                <option value="物">物資備品</option>
+                <option value="機">機具設備</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">名稱與規格 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="new-item-name" placeholder="例如: 高密度防汛沙包" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">存放保管位置 <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="new-item-loc" required>
+              <option value="大同區防汛備災中心" selected>大同區防汛備災中心</option>
+              <option value="里民活動中心地下室">里民活動中心地下室</option>
+              <option value="社區活動中心儲藏室">社區活動中心儲藏室</option>
+              <option value="重慶北路抽水站整備庫">重慶北路抽水站整備庫</option>
+              <option value="各地下停車場管制室">各地下停車場管制室</option>
+              <option value="中山區防汛整備庫">中山區防汛整備庫</option>
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">數量</label>
+              <input type="number" class="form-control form-control-sm" id="new-item-qty" value="50" min="1" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">安全庫存線 (SS)</label>
+              <input type="number" class="form-control form-control-sm" id="new-item-ss" value="30" min="1" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">儲存入庫</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 彈窗：發起主動調撥 -->
 <div class="modal fade" id="modalHelpOthers" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content pro-card border-0">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold">發起跨區物資調撥 (協助他區)</h5>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content pro-card border-0 shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold">發起跨區物資調撥 (支援他區)</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
         <form id="form-help-dispatch">
           <div class="mb-3">
             <label class="form-label fw-semibold">支援社區 (本社區)</label>
-            <input type="text" class="form-control" value="大同區 (本社區庫存高於安全線)" readonly>
+            <input type="text" class="form-control" value="大同區防汛備災中心" readonly>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">受援需求社區</label>
             <select class="form-select" id="help-target-community">
               <option value="士林區後港里">士林區後港里 (缺沙包)</option>
-              <option value="中山區民安里">中山區民安里 (缺乾糧)</option>
+              <option value="中山區民安里">中山區民安里 (缺純淨水)</option>
               <option value="北投區奇岩社區">北投區奇岩社區 (缺擋板)</option>
             </select>
           </div>
@@ -155,32 +235,32 @@
             <label class="form-label fw-semibold">主動調撥品項與數量</label>
             <input type="text" class="form-control" id="help-items" placeholder="例如: 防汛沙包 50 包" required>
           </div>
-          <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">聯繫需求社區</button>
+          <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">確認聯繫並立案調撥</button>
         </form>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 我方提出需求彈窗 -->
+<!-- 彈窗：提出調撥需求 -->
 <div class="modal fade" id="modalDemand" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content pro-card border-0">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold">提出跨區調撥申請</h5>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content pro-card border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title fw-bold">提出跨區物資調撥需求</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
         <form id="form-demand-dispatch">
           <div class="mb-3">
             <label class="form-label fw-semibold">申請社區</label>
-            <input type="text" class="form-control" value="大同區 (本社區)" readonly>
+            <input type="text" class="form-control" value="大同區防汛備災中心" readonly>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">需求項目</label>
-            <input type="text" class="form-control" id="demand-items" placeholder="例如: 抽水泵浦 1 台" required>
+            <label class="form-label fw-semibold">急需項目與數量</label>
+            <input type="text" class="form-control" id="demand-items" placeholder="例如: 移動式抽水泵浦 1 台" required>
           </div>
-          <button type="submit" class="btn btn-danger w-100 py-2 fw-semibold">送出需求</button>
+          <button type="submit" class="btn btn-danger w-100 py-2 fw-semibold">送出調撥需求至中控台</button>
         </form>
       </div>
     </div>
@@ -190,22 +270,91 @@
 
 {% block extra_js %}
 <script>
-document.getElementById("form-help-dispatch")?.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const target = document.getElementById("help-target-community").value;
-  const items = document.getElementById("help-items").value;
-  addDispatchRow("大同區 (本社區)", target, items, "平時餘裕調撥", "建立調撥紀錄 (派送中)");
-  bootstrap.Modal.getInstance(document.getElementById("modalHelpOthers")).hide();
-  alert(`已完成與【${target}】之調撥聯繫，調撥單已立案建立！`);
+const proResources = [
+  { cat: "物", name: "高密度防汛沙包", loc: "大同區防汛備災中心", qty: 350, ss: 200, extra: "常態保養良好", status: "充足 (可調撥)" },
+  { cat: "物", name: "箱裝應急純淨水", loc: "里民活動中心地下室", qty: 45, ss: 50, extra: "保存期限: 2026-12-30", status: "低於安全庫存" },
+  { cat: "物", name: "常溫防災乾糧箱", loc: "社區活動中心儲藏室", qty: 120, ss: 80, extra: "保存期限: 2027-02-10", status: "充足 (可調撥)" },
+  { cat: "機", name: "移動式沉水抽水泵浦", loc: "重慶北路抽水站整備庫", qty: 4, ss: 3, extra: "定期檢驗合格", status: "充足 (可調撥)" },
+  { cat: "機", name: "鋁合金快速擋板", loc: "各地下停車場管制室", qty: 18, ss: 20, extra: "備料齊全", status: "供需缺口" }
+];
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTable("ALL");
+
+  document.getElementById("filter-category")?.addEventListener("change", function() {
+    renderTable(this.value);
+  });
+
+  document.getElementById("form-add-supply-item")?.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const name = document.getElementById("new-item-name").value.trim();
+    const loc = document.getElementById("new-item-loc").value;
+    const qty = parseInt(document.getElementById("new-item-qty").value) || 1;
+    const ss = parseInt(document.getElementById("new-item-ss").value) || 10;
+    const cat = document.getElementById("new-item-cat").value;
+
+    proResources.unshift({
+      cat: cat,
+      name: name,
+      loc: loc,
+      qty: qty,
+      ss: ss,
+      extra: "入庫驗收合格",
+      status: qty >= ss ? "充足 (可調撥)" : "低於安全庫存"
+    });
+    renderTable(document.getElementById("filter-category").value);
+    bootstrap.Modal.getInstance(document.getElementById("modalAddSupply")).hide();
+    this.reset();
+  });
+
+  document.getElementById("form-help-dispatch")?.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const target = document.getElementById("help-target-community").value;
+    const items = document.getElementById("help-items").value;
+    addDispatchRow("大同區防汛備災中心", target, items, "平時餘裕調撥", "派送中");
+    bootstrap.Modal.getInstance(document.getElementById("modalHelpOthers")).hide();
+    alert(`已完成與【${target}】之調撥聯繫，調撥單已立案建立！`);
+    this.reset();
+  });
+
+  document.getElementById("form-demand-dispatch")?.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const items = document.getElementById("demand-items").value;
+    addDispatchRow("待媒合支援方", "大同區防汛備災中心", items, "緊急需求調撥", "智能媒合中");
+    bootstrap.Modal.getInstance(document.getElementById("modalDemand")).hide();
+    alert("調撥需求已發送至全市防災中控平台！");
+    this.reset();
+  });
 });
 
-document.getElementById("form-demand-dispatch")?.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const items = document.getElementById("demand-items").value;
-  addDispatchRow("待媒合社區", "大同區 (本社區)", items, "緊急需求調撥", "智能媒合中");
-  bootstrap.Modal.getInstance(document.getElementById("modalDemand")).hide();
-  alert("需求已發送至全市社區防災調撥中心！");
-});
+function renderTable(filter) {
+  const tbody = document.getElementById("resource-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const list = filter === "ALL" ? proResources : proResources.filter(r => r.cat === filter);
+  list.forEach(r => {
+    let catBadge = '<span class="badge bg-primary">物資備品</span>';
+    if (r.cat === '機') catBadge = '<span class="badge bg-warning text-dark">機具設備</span>';
+
+    const isShortage = r.qty < r.ss;
+    const statusDisplay = isShortage 
+      ? '<span class="badge bg-danger">低於安全庫存</span>' 
+      : '<span class="badge bg-success">充足 (可調撥)</span>';
+
+    tbody.innerHTML += `
+      <tr>
+        <td style="white-space: nowrap;">${catBadge}</td>
+        <td class="fw-bold text-dark">${r.name}</td>
+        <td class="text-secondary small">${r.loc}</td>
+        <td class="fw-bold fs-6 ${isShortage ? 'text-danger' : 'text-primary'}" style="white-space: nowrap;">${r.qty}</td>
+        <td class="text-muted small" style="white-space: nowrap;">${r.ss}</td>
+        <td class="small text-secondary" style="white-space: nowrap;">${r.extra}</td>
+        <td style="white-space: nowrap; text-align: center;">${statusDisplay}</td>
+      </tr>
+    `;
+  });
+}
 
 function quickAssist(targetCommunity, defaultItem) {
   document.getElementById("help-target-community").value = targetCommunity;
@@ -213,7 +362,6 @@ function quickAssist(targetCommunity, defaultItem) {
   new bootstrap.Modal(document.getElementById("modalHelpOthers")).show();
 }
 
-// 移除調撥方向欄位後的動態新增函式
 function addDispatchRow(from, to, item, timing, status) {
   const tbody = document.getElementById("dispatch-table-body");
   const tr = `

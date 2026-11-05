@@ -10,20 +10,17 @@
       <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone me-2"></i>服務互動</a>
     </div>
 
-    <!-- 服務互動子功能選單 -->
+    <!-- 服務互動子功能選單 (已互換順序並刪除智慧問答) -->
     <div class="mt-3">
       <div class="list-group shadow-sm">
-        <button class="list-group-item list-group-item-action d-flex align-items-center active py-2" data-bs-toggle="pill" data-bs-target="#panel-supply">
-          <i class="bi bi-box-seam me-2 fs-6"></i> 資源申請與紀錄
+        <button class="list-group-item list-group-item-action d-flex align-items-center active py-2" data-bs-toggle="pill" data-bs-target="#panel-report">
+          <i class="bi bi-camera me-2 fs-6 text-danger"></i> 災情通報
         </button>
-        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-report">
-          <i class="bi bi-camera me-2 fs-6 text-danger"></i> 災情通報與進度
+        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-supply">
+          <i class="bi bi-box-seam me-2 fs-6 text-primary"></i> 需求申請
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2 text-warning fw-bold" data-bs-toggle="pill" data-bs-target="#panel-volunteer">
-          <i class="bi bi-award-fill me-2 fs-6 text-warning"></i> 防汛志工任務與集點
-        </button>
-        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-qa">
-          <i class="bi bi-robot me-2 fs-6 text-success"></i> 24H 智慧防汛問答
+          <i class="bi bi-award-fill me-2 fs-6 text-warning"></i> 志工任務與集點
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-board">
           <i class="bi bi-chat-square-text me-2 fs-6 text-info"></i> 防汛留言板
@@ -57,10 +54,121 @@
   <div class="col-md-9">
     <div class="tab-content">
       
-      <!-- 模組 1: 資源申請與紀錄 -->
-      <div class="tab-pane fade show active" id="panel-supply">
+      <!-- 模組 1: 災情通報 (原模組 2，排至第 1 位並預設 active) -->
+      <div class="tab-pane fade show active" id="panel-report">
+        
+        <!-- 災情通報即時看：高度加大，一次呈現 2 筆通報 -->
+        <div class="live-ticker-card shadow-sm p-3 mb-4 rounded border-start border-danger border-4 bg-white" style="min-height: 140px;">
+          <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+            <span class="badge bg-danger animate-pulse px-2 py-1 me-2" style="font-size: 0.85rem;">
+              <i class="bi bi-broadcast me-1"></i>災情通報即時看
+            </span>
+            <strong class="text-dark fs-6" id="ticker-summary-text">今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：</strong>
+          </div>
+          <!-- 垂直滾動視窗：高度調大至 88px (可容納 2 筆) -->
+          <div class="ticker-viewport" id="tickerViewport" style="height: 88px; overflow: hidden; position: relative;">
+            <div class="ticker-track" id="tickerTrack" style="transition: transform 0.5s ease-in-out;">
+              <div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>
+            </div>
+          </div>
+        </div>
+
         <div class="pro-card p-4 shadow-sm mb-4">
-          <h4 class="fw-bold text-dark mb-3"><i class="bi bi-box-seam text-primary me-2"></i>資源申請與紀錄</h4>
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera-fill text-danger me-2"></i>災情通報</h5>
+          <form id="form-disaster" onsubmit="event.preventDefault(); promptConfirmDisasterModal();">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">通報行政區</label>
+                <input type="text" class="form-control" id="report-district" value="{{ session.get('district', '中山區') }}" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">積淹水詳細位置/路口 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="report-loc" placeholder="例如: 重慶北路三段與酒泉街口" required>
+              </div>
+
+              <!-- 災害種類選擇：非必填、精簡為 7 項 -->
+              <div class="col-12">
+                <label class="form-label fw-semibold d-block mb-1">
+                  災害種類選擇
+                </label>
+                <div class="input-group mb-2">
+                  <span class="input-group-text bg-light text-secondary"><i class="bi bi-tag-fill"></i></span>
+                  <select class="form-select" id="report-disaster-type" onchange="addDisasterTypeTag(this.value)">
+                    <option value="" selected disabled>-- 點選加入災害種類 (可複選多項) --</option>
+                    <option value="路樹災情">路樹災情</option>
+                    <option value="廣告招牌災情">廣告招牌災情</option>
+                    <option value="道路災情">道路災情</option>
+                    <option value="鐵路、高鐵捷運災情">鐵路、高鐵捷運災情</option>
+                    <option value="積淹水災情">積淹水災情</option>
+                    <option value="建物毀損">建物毀損</option>
+                    <option value="其他災情">其他災情</option>
+                  </select>
+                </div>
+
+                <!-- 已選取標籤區 -->
+                <div class="p-2 bg-light rounded border mb-3 d-flex flex-wrap align-items-center gap-1" id="selected-types-container" style="min-height: 40px;">
+                  <small class="text-muted" id="types-placeholder-text">尚未選取種類，可從上方下拉選單點選加入災害種類</small>
+                </div>
+
+                <label class="form-label fw-semibold">災情完整描述 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="report-desc" rows="4" placeholder="請描述現場受阻情況或積淹水深度..." required></textarea>
+              </div>
+              
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-image text-primary me-1"></i>上傳現場災情相片 <small class="text-muted">(選填)</small>
+                </label>
+                <input type="file" class="form-control" id="report-img-file" accept="image/*">
+                <div id="img-preview-box" class="mt-2 d-none">
+                  <img id="img-preview" src="" style="max-height: 100px; border-radius: 6px; border: 1px solid #ccc;">
+                  <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeSelectedImage()">移除相片</button>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-danger px-4 py-2 mt-3 fw-semibold shadow-sm">
+              <i class="bi bi-send-fill me-1"></i> 送出災情通報
+            </button>
+          </form>
+        </div>
+
+        <!-- 通報處理進度追蹤 (已調整為只顯示該登入帳號的案件) -->
+        <div class="pro-card p-4 shadow-sm">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+            <div>
+              <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-card-checklist text-danger"></i> 通報處理進度追蹤
+              </h5>
+              <small class="text-muted">顯示您目前帳號所通報之案件進度</small>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <div class="input-group input-group-sm" style="width: 160px;">
+                <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="disaster-search-keyword" class="form-control" placeholder="搜尋地點/單號...">
+              </div>
+              <select id="disaster-filter-status" class="form-select form-select-sm" style="width: 110px;">
+                <option value="ALL">全部狀態</option>
+                <option value="通報受理">通報受理</option>
+                <option value="派員現場">派員現場</option>
+                <option value="已結案">已結案</option>
+              </select>
+              <select id="disaster-sort-time" class="form-select form-select-sm border-danger fw-bold text-danger" style="width: 115px;">
+                <option value="desc">由新到舊</option>
+                <option value="asc">由舊到新</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="accordion" id="disasterAccordion">
+          </div>
+        </div>
+      </div>
+
+      <!-- 模組 2: 需求申請 (原模組 1，排至第 2 位) -->
+      <div class="tab-pane fade" id="panel-supply">
+        <div class="pro-card p-4 shadow-sm mb-4">
+          <h4 class="fw-bold text-dark mb-3"><i class="bi bi-box-seam text-primary me-2"></i>需求申請</h4>
           
           <form id="form-supply" onsubmit="event.preventDefault(); promptConfirmSupplyModal();">
             <div class="row g-3">
@@ -151,12 +259,12 @@
           </form>
         </div>
 
-        <!-- 我的申請歷史紀錄 -->
+        <!-- 我的申請歷史紀錄 (只呈現該帳號的申請紀錄) -->
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <div>
               <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-primary me-2"></i>我的申請歷史紀錄</h5>
-              <small class="text-muted">點擊任一紀錄即可查看進度條與詳細資訊</small>
+              <small class="text-muted">僅顯示您目前帳號的申請進度與紀錄</small>
             </div>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
@@ -198,121 +306,12 @@
         </div>
       </div>
 
-      <!-- 模組 2: 災情通報與進度 -->
-      <div class="tab-pane fade" id="panel-report">
-        
-        <!-- 跑馬燈大版面、標題醒目放大 -->
-        <div class="live-ticker-card shadow-sm p-3 mb-4 rounded border-start border-danger border-4 bg-white" style="min-height: 95px;">
-          <div class="d-flex align-items-center mb-2 pb-1 border-bottom">
-            <span class="badge bg-danger animate-pulse px-2 py-1 me-2" style="font-size: 0.85rem;">
-              <i class="bi bi-broadcast me-1"></i>災情通報即時看
-            </span>
-            <strong class="text-dark fs-6" id="ticker-summary-text">今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：</strong>
-          </div>
-          <div class="ticker-viewport" id="tickerViewport" style="height: 44px; overflow: hidden; position: relative;">
-            <div class="ticker-track" id="tickerTrack" style="transition: transform 0.5s ease-in-out;">
-              <div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pro-card p-4 shadow-sm mb-4">
-          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera-fill text-danger me-2"></i>即時災情通報</h5>
-          <form id="form-disaster" onsubmit="event.preventDefault(); promptConfirmDisasterModal();">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">通報行政區</label>
-                <input type="text" class="form-control" id="report-district" value="{{ session.get('district', '中山區') }}" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">積淹水詳細位置/路口 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="report-loc" placeholder="例如: 重慶北路三段與酒泉街口" required>
-              </div>
-
-              <!-- 災害種類選擇：非必填、精簡為 7 項 -->
-              <div class="col-12">
-                <label class="form-label fw-semibold d-block mb-1">
-                  災害種類選擇
-                </label>
-                <div class="input-group mb-2">
-                  <span class="input-group-text bg-light text-secondary"><i class="bi bi-tag-fill"></i></span>
-                  <select class="form-select" id="report-disaster-type" onchange="addDisasterTypeTag(this.value)">
-                    <option value="" selected disabled>-- 點選加入災害種類 (可複選多項) --</option>
-                    <option value="路樹災情">路樹災情</option>
-                    <option value="廣告招牌災情">廣告招牌災情</option>
-                    <option value="道路災情">道路災情</option>
-                    <option value="鐵路、高鐵捷運災情">鐵路、高鐵捷運災情</option>
-                    <option value="積淹水災情">積淹水災情</option>
-                    <option value="建物毀損">建物毀損</option>
-                    <option value="其他災情">其他災情</option>
-                  </select>
-                </div>
-
-                <!-- 已選取標籤區 -->
-                <div class="p-2 bg-light rounded border mb-3 d-flex flex-wrap align-items-center gap-1" id="selected-types-container" style="min-height: 40px;">
-                  <small class="text-muted" id="types-placeholder-text">尚未選取種類，可從上方下拉選單點選加入災害種類</small>
-                </div>
-
-                <label class="form-label fw-semibold">災情完整描述 <span class="text-danger">*</span></label>
-                <textarea class="form-control" id="report-desc" rows="4" placeholder="請描述現場受阻情況或積淹水深度..." required></textarea>
-              </div>
-              
-              <div class="col-md-12">
-                <label class="form-label fw-semibold">
-                  <i class="bi bi-image text-primary me-1"></i>上傳現場災情相片 <small class="text-muted">(選填)</small>
-                </label>
-                <input type="file" class="form-control" id="report-img-file" accept="image/*">
-                <div id="img-preview-box" class="mt-2 d-none">
-                  <img id="img-preview" src="" style="max-height: 100px; border-radius: 6px; border: 1px solid #ccc;">
-                  <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeSelectedImage()">移除相片</button>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-danger px-4 py-2 mt-3 fw-semibold shadow-sm">
-              <i class="bi bi-send-fill me-1"></i> 送出災情通報
-            </button>
-          </form>
-        </div>
-
-        <!-- 通報處理進度追蹤 -->
-        <div class="pro-card p-4 shadow-sm">
-          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
-            <div>
-              <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-card-checklist text-danger"></i> 通報處理進度追蹤
-              </h5>
-            </div>
-
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <div class="input-group input-group-sm" style="width: 160px;">
-                <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
-                <input type="text" id="disaster-search-keyword" class="form-control" placeholder="搜尋地點/單號...">
-              </div>
-              <select id="disaster-filter-status" class="form-select form-select-sm" style="width: 110px;">
-                <option value="ALL">全部狀態</option>
-                <option value="通報受理">通報受理</option>
-                <option value="派員現場">派員現場</option>
-                <option value="已結案">已結案</option>
-              </select>
-              <select id="disaster-sort-time" class="form-select form-select-sm border-danger fw-bold text-danger" style="width: 115px;">
-                <option value="desc">由新到舊</option>
-                <option value="asc">由舊到新</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="accordion" id="disasterAccordion">
-          </div>
-        </div>
-      </div>
-
-      <!-- 模組 3: 志工任務大廳與商城 -->
+      <!-- 模組 3: 志工任務與集點 -->
       <div class="tab-pane fade" id="panel-volunteer">
         <div class="pro-card p-4 shadow-sm mb-4">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <div>
-              <h5 class="fw-bold text-dark mb-1"><i class="bi bi-person-walking text-success me-2"></i>防汛志工任務出勤大廳</h5>
+              <h5 class="fw-bold text-dark mb-1"><i class="bi bi-person-walking text-success me-2"></i>志工任務</h5>
               <small class="text-muted">接案後進入執行中，完成現場工作需經通報申請者驗收後核發獎勵點數</small>
             </div>
             <span class="badge bg-danger">緊急出勤支援</span>
@@ -398,21 +397,7 @@
 
       </div>
 
-      <!-- 模組 4: 24H 問答 -->
-      <div class="tab-pane fade" id="panel-qa">
-        <div class="pro-card p-4 shadow-sm">
-          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-chat-dots-fill text-success me-2"></i>24H 智慧防汛即時諮詢</h5>
-          <div class="border rounded p-3 mb-3 bg-light" id="chat-box" style="height: 260px; overflow-y: auto;">
-            <div class="mb-2"><strong class="text-primary">🤖 防汛助手：</strong>您好！我是防汛智慧諮詢助手，請問有關避難路線、沙包申請、抽水機調配或積水處置等問題嗎？</div>
-          </div>
-          <div class="input-group">
-            <input type="text" id="qa-input" class="form-control" placeholder="請輸入問題...">
-            <button class="btn btn-success px-4" id="btn-send-qa">發送</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 模組 5: 社區留言板 -->
+      <!-- 模組 4: 防汛留言板 (原模組 5) -->
       <div class="tab-pane fade" id="panel-board">
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
@@ -633,12 +618,12 @@
   </div>
 </div>
 
-<!-- 彈窗 3：資源申請送出前確認清單 Modal -->
+<!-- 彈窗 3：需求申請送出前確認清單 Modal -->
 <div class="modal fade" id="confirmSupplySubmitModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content pro-card border-0 shadow-lg">
       <div class="modal-header bg-primary text-white py-3">
-        <h5 class="modal-title fw-bold"><i class="bi bi-check2-circle me-2"></i>確認調度申請內容</h5>
+        <h5 class="modal-title fw-bold"><i class="bi bi-check2-circle me-2"></i>確認需求申請內容</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4 bg-light">
@@ -688,7 +673,7 @@
   </div>
 </div>
 
-<!-- 彈窗 4：災情通報送出前確認 Modal（支援獨立標籤、描述換行與【種類】高亮） -->
+<!-- 彈窗 4：災情通報送出前確認 Modal -->
 <div class="modal fade" id="confirmDisasterSubmitModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content pro-card border-0 shadow-lg">
@@ -701,12 +686,10 @@
         <div class="p-3 bg-light rounded border mb-3 small">
           <div class="mb-2"><strong>通報區域：</strong><span id="cdmodal-district"></span></div>
           <div class="mb-2"><strong>積淹水地點：</strong><span id="cdmodal-loc"></span></div>
-          <!-- 獨立標籤顯示區 -->
           <div class="mb-2 d-flex align-items-center flex-wrap">
             <strong class="me-1">災害種類：</strong>
             <span id="cdmodal-type"></span>
           </div>
-          <!-- 災情描述摘要換行與彩色高亮展示區 -->
           <div class="mb-2 mt-2 pt-2 border-top">
             <strong class="d-block mb-1">災情描述摘要：</strong>
             <div id="cdmodal-desc" class="p-2 bg-white rounded border text-dark fw-normal" style="white-space: pre-line; line-height: 1.6;"></div>
