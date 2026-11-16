@@ -8,7 +8,106 @@ let selectedImageBase64 = "";
 let tickerInterval = null;
 let selectedDisasterTypes = [];
 
-// 資源主類型、子分類與具體品項規格字典
+let verifiedZoneCoords = null;
+
+const RED_ORANGE_ZONES = [
+  { name: "北投低窪警戒區", district: "北投區", level: "red", label: "嚴重 (紅色警戒區)", lat: 25.1325, lon: 121.4988, radiusKm: 2.5 },
+  { name: "大同延平北路段", district: "大同區", level: "orange", label: "偏高 (橘色警戒區)", lat: 25.0655, lon: 121.5145, radiusKm: 2.2 },
+  { name: "中山低窪警戒區", district: "中山區", level: "orange", label: "偏高 (橘色警戒區)", lat: 25.0685, lon: 121.5325, radiusKm: 2.0 }
+];
+
+function calcDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findMatchedRedOrangeZone(lat, lon) {
+  for (const z of RED_ORANGE_ZONES) {
+    if (calcDistanceKm(lat, lon, z.lat, z.lon) <= z.radiusKm) {
+      return z;
+    }
+  }
+  return null;
+}
+
+function verifyDemandZoneEligibility() {
+  const banner = document.getElementById("zone-eligibility-banner");
+  const submitBtn = document.getElementById("btn-submit-supply");
+  if (!banner) return;
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        applyZoneVerification(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        applyZoneVerification(25.0478, 121.5318);
+      },
+      { timeout: 4000 }
+    );
+  } else {
+    applyZoneVerification(25.0478, 121.5318);
+  }
+}
+
+function simulateDisasterZone(type) {
+  if (type === "red") {
+    applyZoneVerification(25.1325, 121.4988);
+  } else {
+    applyZoneVerification(25.0655, 121.5145);
+  }
+}
+
+function applyZoneVerification(lat, lon) {
+  const banner = document.getElementById("zone-eligibility-banner");
+  const submitBtn = document.getElementById("btn-submit-supply");
+  const distInput = document.getElementById("supply-district");
+  if (!banner) return;
+
+  const zone = findMatchedRedOrangeZone(lat, lon);
+  if (zone) {
+    verifiedZoneCoords = { lat, lon, zone };
+    if (distInput) distInput.value = zone.district;
+
+    const badgeColor = zone.level === "red" ? "bg-danger" : "bg-warning text-dark";
+    const alertClass = zone.level === "red" ? "alert-danger border-danger" : "alert-warning border-warning";
+
+    banner.className = `alert ${alertClass} py-2 px-3 small mb-3 d-flex align-items-center justify-content-between`;
+    banner.innerHTML = `
+      <div>
+        <span class="badge ${badgeColor} me-2">${zone.label}</span>
+        <strong>定位核驗通過！</strong>您目前位於【${zone.name}】，符合緊急需求申請資格。
+      </div>
+      <i class="bi bi-check-circle-fill text-success fs-5"></i>
+    `;
+    if (submitBtn) {
+      submitBtn.removeAttribute("disabled");
+      submitBtn.classList.remove("btn-secondary");
+      submitBtn.classList.add("btn-primary");
+    }
+  } else {
+    verifiedZoneCoords = null;
+    banner.className = "alert alert-secondary border-secondary py-2 px-3 small mb-3 d-flex align-items-center justify-content-between";
+    banner.innerHTML = `
+      <div>
+        <span class="badge bg-success me-2">安全 / 注意區域</span>
+        <strong>無法提出申請：</strong>僅限 <strong>紅色 (嚴重)</strong> 或 <strong>橘色 (偏高)</strong> 災害發生區域可申請需求。
+      </div>
+      <i class="bi bi-lock-fill text-secondary fs-5"></i>
+    `;
+    if (submitBtn) {
+      submitBtn.setAttribute("disabled", "true");
+      submitBtn.classList.remove("btn-primary");
+      submitBtn.classList.add("btn-secondary");
+    }
+  }
+}
+
 const resourceDictionary = {
   "物": {
     "防汛阻水類": [
@@ -70,7 +169,6 @@ const resourceDictionary = {
 
 let pendingRequestItems = [];
 
-// 柔和淺色標籤配色
 const DISASTER_TAG_STYLES = {
   "路樹災情": "background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;",
   "廣告招牌災情": "background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;",
@@ -83,24 +181,22 @@ const DISASTER_TAG_STYLES = {
 
 document.addEventListener("DOMContentLoaded", () => {
   updateSubCatOptions();
-  loadSupplyHistory();       // 載入當前帳號的需求申請歷史
-  loadDisasterLiveTicker();  // 跑馬燈載入全體災情
-  loadDisasterAccordion();   // 載入當前帳號的災情通報歷史
+  verifyDemandZoneEligibility();
+  loadSupplyHistory();
+  loadDisasterLiveTicker();
+  loadDisasterAccordion();
   loadVolunteerTasks();
   loadBoardMessages();
   updateVolunteerUI();
 
-  // 需求申請歷史紀錄篩選
   document.getElementById("supply-search-keyword")?.addEventListener("input", filterAndRenderSupplyHistory);
   document.getElementById("supply-filter-type")?.addEventListener("change", filterAndRenderSupplyHistory);
   document.getElementById("supply-sort-time")?.addEventListener("change", filterAndRenderSupplyHistory);
 
-  // 災情追蹤篩選
   document.getElementById("disaster-search-keyword")?.addEventListener("input", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-filter-status")?.addEventListener("change", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-sort-time")?.addEventListener("change", filterAndRenderDisasterAccordion);
 
-  // 照片預覽與壓縮
   const fileInput = document.getElementById("report-img-file");
   if (fileInput) {
     fileInput.addEventListener("change", function(e) {
@@ -136,7 +232,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 留言板
   const btnSubmitMsg = document.getElementById("btn-submit-message");
   if (btnSubmitMsg) {
     btnSubmitMsg.addEventListener("click", async () => {
@@ -244,6 +339,10 @@ function renderRequestTable() {
 }
 
 function promptConfirmSupplyModal() {
+  if (!verifiedZoneCoords) {
+    alert("您目前不在紅色（嚴重）或橘色（偏高）災害發生區域內，無法提出需求申請！");
+    return;
+  }
   if (pendingRequestItems.length === 0) return;
 
   const name = document.getElementById("supply-name")?.value || "王小明";
@@ -271,10 +370,12 @@ function promptConfirmSupplyModal() {
   new bootstrap.Modal(document.getElementById("confirmSupplySubmitModal")).show();
 }
 
-function executeRealSupplySubmit() {
+async function executeRealSupplySubmit() {
+  if (!verifiedZoneCoords) return;
+
   const phone = document.getElementById("supply-phone")?.value.trim() || "";
   const address = document.getElementById("supply-address")?.value.trim() || "";
-  const district = document.getElementById("supply-district")?.value.trim() || "中山區";
+  const district = document.getElementById("supply-district")?.value.trim() || "大同區";
 
   const modalEl = document.getElementById("confirmSupplySubmitModal");
   if (modalEl) {
@@ -282,66 +383,35 @@ function executeRealSupplySubmit() {
     if (modalInstance) modalInstance.hide();
   }
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const payload = {
-            contact_phone: phone,
-            detail_address: address,
-            district: district,
-            items: pendingRequestItems,
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude
-          };
+  try {
+    const payload = {
+      contact_phone: phone,
+      detail_address: address,
+      district: district,
+      items: pendingRequestItems,
+      latitude: verifiedZoneCoords.lat,
+      longitude: verifiedZoneCoords.lon
+    };
 
-          const res = await fetch("/api/supply-request", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (data.status === "success") {
-            pendingRequestItems = [];
-            renderRequestTable();
-            if (document.getElementById("supply-address")) {
-              document.getElementById("supply-address").value = "";
-            }
-            loadSupplyHistory();
-          }
-        } catch (e) {}
-      },
-      async () => {
-        try {
-          const payload = {
-            contact_phone: phone,
-            detail_address: address,
-            district: district,
-            items: pendingRequestItems,
-            latitude: 25.0685,
-            longitude: 121.5325
-          };
-          const res = await fetch("/api/supply-request", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (data.status === "success") {
-            pendingRequestItems = [];
-            renderRequestTable();
-            if (document.getElementById("supply-address")) {
-              document.getElementById("supply-address").value = "";
-            }
-            loadSupplyHistory();
-          }
-        } catch (e) {}
+    const res = await fetch("/api/supply-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      pendingRequestItems = [];
+      renderRequestTable();
+      if (document.getElementById("supply-address")) {
+        document.getElementById("supply-address").value = "";
       }
-    );
-  }
+      loadSupplyHistory();
+    } else {
+      alert(data.message || "送出失敗");
+    }
+  } catch (e) {}
 }
 
-// 多選災害種類標籤
 function addDisasterTypeTag(typeVal) {
   if (!typeVal) return;
   if (!selectedDisasterTypes.includes(typeVal)) {
@@ -376,7 +446,6 @@ function renderDisasterTypeTags() {
   `).join("");
 }
 
-// 同步災情描述框（【種類】後面不加冒號，直接留空格）
 function syncDisasterDesc() {
   const descArea = document.getElementById("report-desc");
   if (!descArea) return;
@@ -481,8 +550,8 @@ async function executeRealDisasterSubmit() {
       selectedDisasterTypes = [];
       renderDisasterTypeTags();
       removeSelectedImage();
-      loadDisasterAccordion();  // 刷新個人通報進度
-      loadDisasterLiveTicker(); // 刷新全體跑馬燈
+      loadDisasterAccordion();
+      loadDisasterLiveTicker();
     }
   } catch (e) {}
 }
@@ -495,7 +564,6 @@ function removeSelectedImage() {
   if (box) box.classList.add("d-none");
 }
 
-// 需求申請歷史紀錄：強制帶入 scope=mine，只查自己的帳號
 async function loadSupplyHistory() {
   const tbody = document.getElementById("supply-history-tbody");
   if (!tbody) return;
@@ -666,7 +734,6 @@ function openOrderDetailModal(orderNo) {
   new bootstrap.Modal(document.getElementById("orderProgressModal")).show();
 }
 
-// 跑馬燈載入全體資料 (scope=all)，一次展示 2 筆
 async function loadDisasterLiveTicker() {
   const summaryEl = document.getElementById("ticker-summary-text");
   const trackEl = document.getElementById("tickerTrack");
@@ -685,7 +752,6 @@ async function loadDisasterLiveTicker() {
 
     summaryEl.innerHTML = `今日已累計 <span class="text-danger fw-bold fs-5">${reports.length}</span> 筆災情通報：`;
 
-    // 格式化為整齊的單行列表，每筆高度 44px
     trackEl.innerHTML = reports.map(r => `
       <div class="ticker-item py-2 text-truncate" style="height: 44px; line-height: 28px;">
         <span class="badge bg-danger me-2">${r.district}</span>
@@ -697,7 +763,7 @@ async function loadDisasterLiveTicker() {
 
     if (tickerInterval) clearInterval(tickerInterval);
     let currentIndex = 0;
-    const itemHeight = 44; // 容器高度 88px 可完整容納 2 筆
+    const itemHeight = 44;
 
     if (reports.length > 2) {
       tickerInterval = setInterval(() => {
@@ -711,7 +777,6 @@ async function loadDisasterLiveTicker() {
   } catch(e) {}
 }
 
-// 通報處理進度追蹤：強制帶入 scope=mine，嚴格只查自己通報的案件
 async function loadDisasterAccordion() {
   const container = document.getElementById("disasterAccordion");
   if (!container) return;

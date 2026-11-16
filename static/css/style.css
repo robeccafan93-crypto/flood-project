@@ -12,6 +12,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .navbar-custom {
@@ -50,12 +51,18 @@ body {
   color: white;
 }
 
+.pro-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
 .hero-resort-banner {
   position: relative;
   background: linear-gradient(rgba(11, 19, 41, 0.55), rgba(11, 19, 41, 0.7)),
               url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
   color: white;
-  padding: 6.5rem 2rem 7.5rem 2rem;
+  padding: 6rem 2rem 7rem 2rem;
   border-radius: 16px;
   text-align: center;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
@@ -140,7 +147,7 @@ body {
 
 .section-title-wrapper {
   text-align: center;
-  margin: 4.5rem 0 2.5rem 0;
+  margin: 4rem 0 2.5rem 0;
 }
 
 .section-title-main {
@@ -203,6 +210,11 @@ body {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 0.65rem 0.9rem;
+}
+
+/* 表格響應式捲動最佳化 */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ================= 緊湊進度條樣式 ================= */
@@ -282,13 +294,12 @@ body {
   transform: scale(1.08);
 }
 
-/* ================= 需求 2：即時通報動態跑馬燈樣式 ================= */
+/* ================= 即時通報動態跑馬燈樣式 ================= */
 .live-ticker-card {
   background-color: #ffffff;
 }
 
 .ticker-viewport {
-  height: 32px;
   overflow: hidden;
   position: relative;
 }
@@ -298,8 +309,6 @@ body {
 }
 
 .ticker-item {
-  height: 32px;
-  line-height: 32px;
   white-space: nowrap;
 }
 
@@ -310,4 +319,118 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: .5; }
+}
+
+/* ================= RWD 響應式斷點適配 (平板與手機版) ================= */
+@media (max-width: 991.98px) {
+  .navbar-custom {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .navbar-collapse {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #334155;
+  }
+
+  .navbar-nav {
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-resort-banner {
+    padding: 4rem 1.5rem 5rem 1.5rem;
+  }
+
+  .hero-title-main {
+    font-size: 2.4rem;
+  }
+
+  .floating-status-bar {
+    margin-top: -2.5rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+
+  .status-cell {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .hero-resort-banner {
+    padding: 3rem 1rem 3.5rem 1rem;
+    border-radius: 12px;
+  }
+
+  .hero-title-main {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+  }
+
+  .hero-subtitle::before, .hero-subtitle::after {
+    display: none;
+  }
+
+  .floating-status-bar {
+    margin-top: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .section-title-wrapper {
+    margin: 2.5rem 0 1.5rem 0;
+  }
+
+  .section-title-main {
+    font-size: 1.75rem;
+  }
+
+  .pro-card {
+    padding: 1.15rem !important;
+  }
+
+  /* 手機版進度條縮小間距避免破版 */
+  .stepper-compact-wrapper {
+    padding: 0 5px;
+  }
+
+  .stepper-compact-wrapper::before {
+    top: 18px;
+    left: 25px;
+    right: 25px;
+  }
+
+  .stepper-compact-line {
+    top: 18px;
+    left: 25px;
+  }
+
+  .step-compact-item {
+    width: 65px;
+  }
+
+  .step-compact-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .step-compact-title {
+    font-size: 0.72rem;
+  }
+
+  .step-time {
+    font-size: 0.65rem;
+  }
+
+  #evacuation-map {
+    height: 320px !important;
+  }
 }

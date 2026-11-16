@@ -12,20 +12,20 @@
 </head>
 <body>
 
-  <!-- 頂部導航列 (平台名稱改為「智援臺北」，管理端三大新分區) -->
-  <nav class="navbar navbar-expand-lg navbar-custom sticky-top py-2 px-4 shadow-sm">
+  <!-- 頂部導航列 (完整支援手機/平板 RWD 摺疊) -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top py-2 px-3 px-lg-4 shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-2 me-4" href="{{ url_for('index') }}">
         <i class="bi bi-shield-shaded text-info fs-4"></i>
         <span>智援臺北</span>
       </a>
       
-      <button class="navbar-toggler border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+      <button class="navbar-toggler border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="切換導航">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="navMain">
-        <ul class="navbar-nav me-auto gap-2">
+        <ul class="navbar-nav me-auto gap-1 gap-lg-2">
           <li class="nav-item">
             <a class="nav-link nav-tab-link" href="{{ url_for('index') }}"><i class="bi bi-house-door me-1"></i> 首頁</a>
           </li>
@@ -43,7 +43,7 @@
               </ul>
             </li>
 
-            <!-- 管理端三大新分區 (案件處理、物資庫存、志工管理) -->
+            <!-- 管理端三大新分區 -->
             {% if session.get('role') == 'community' %}
             <li class="nav-item dropdown">
               <a class="nav-link nav-tab-link dropdown-toggle text-warning" href="#" data-bs-toggle="dropdown">
@@ -60,7 +60,7 @@
         </ul>
 
         <!-- 會員頭像按鈕 -->
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3 pt-2 pt-lg-0">
           {% if session.get('username') %}
             <button class="btn btn-outline-light rounded-pill px-3 py-1 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal" title="點擊編輯個人資料">
               {% if session.get('role') == 'community' %}
@@ -72,14 +72,14 @@
             </button>
             <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">登出</a>
           {% else %}
-            <a href="{{ url_for('auth') }}" class="btn btn-primary btn-sm px-3 fw-semibold">登入 / 註冊</a>
+            <a href="{{ url_for('auth') }}" class="btn btn-primary btn-sm px-3 fw-semibold w-100 w-lg-auto">登入 / 註冊</a>
           {% endif %}
         </div>
       </div>
     </div>
   </nav>
 
-  <main class="container my-4">
+  <main class="container my-3 my-md-4">
     {% block content %}{% endblock %}
   </main>
 
@@ -101,7 +101,7 @@
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4 bg-light">
+        <div class="modal-body p-3 p-md-4 bg-light">
           <div class="alert alert-danger border-danger mb-3">
             <h6 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-1"></i>警戒區域：<span id="alert-district-name">大同區 / 中山區</span></h6>
             <div class="small" id="alert-detail-msg">智慧預警模型偵測降雨超標，短延時強降雨已達 85mm/hr，地下道與低窪處極易積水！</div>
@@ -125,7 +125,7 @@
     </div>
   </div>
 
-  <!-- 個人資料彈窗 (完整保留志工專長技能項目設定) -->
+  <!-- 個人資料彈窗 -->
   {% if session.get('username') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -140,7 +140,7 @@
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4">
+        <div class="modal-body p-3 p-md-4">
           <form id="form-update-profile">
             <div class="mb-3">
               <label class="form-label text-muted small fw-bold">真實姓名</label>
@@ -163,7 +163,7 @@
               </select>
             </div>
 
-            <!-- 完整保留：志工專長技能項目設定 (圖一復原) -->
+            <!-- 志工專長技能項目設定 -->
             <div class="mb-3 p-3 bg-light rounded border">
               <label class="form-label text-dark small fw-bold d-block mb-2">志工專長技能項目設定</label>
               <div class="row g-2">

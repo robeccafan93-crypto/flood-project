@@ -10,13 +10,13 @@
       <a href="{{ url_for('citizen_service') }}" class="list-group-item list-group-item-action active"><i class="bi bi-megaphone me-2"></i>服務互動</a>
     </div>
 
-    <!-- 服務互動子功能選單 (已互換順序並刪除智慧問答) -->
+    <!-- 服務互動子功能選單 -->
     <div class="mt-3">
       <div class="list-group shadow-sm">
         <button class="list-group-item list-group-item-action d-flex align-items-center active py-2" data-bs-toggle="pill" data-bs-target="#panel-report">
           <i class="bi bi-camera me-2 fs-6 text-danger"></i> 災情通報
         </button>
-        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-supply">
+        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-supply" onclick="verifyDemandZoneEligibility()">
           <i class="bi bi-box-seam me-2 fs-6 text-primary"></i> 需求申請
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2 text-warning fw-bold" data-bs-toggle="pill" data-bs-target="#panel-volunteer">
@@ -54,10 +54,8 @@
   <div class="col-md-9">
     <div class="tab-content">
       
-      <!-- 模組 1: 災情通報 (原模組 2，排至第 1 位並預設 active) -->
+      <!-- 模組 1: 災情通報 -->
       <div class="tab-pane fade show active" id="panel-report">
-        
-        <!-- 災情通報即時看：高度加大，一次呈現 2 筆通報 -->
         <div class="live-ticker-card shadow-sm p-3 mb-4 rounded border-start border-danger border-4 bg-white" style="min-height: 140px;">
           <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
             <span class="badge bg-danger animate-pulse px-2 py-1 me-2" style="font-size: 0.85rem;">
@@ -65,7 +63,6 @@
             </span>
             <strong class="text-dark fs-6" id="ticker-summary-text">今日已累計 <span class="text-danger fw-bold fs-5">0</span> 筆災情通報：</strong>
           </div>
-          <!-- 垂直滾動視窗：高度調大至 88px (可容納 2 筆) -->
           <div class="ticker-viewport" id="tickerViewport" style="height: 88px; overflow: hidden; position: relative;">
             <div class="ticker-track" id="tickerTrack" style="transition: transform 0.5s ease-in-out;">
               <div class="ticker-item text-muted small py-2">全區水情監測中，暫無通報案件。</div>
@@ -86,7 +83,6 @@
                 <input type="text" class="form-control" id="report-loc" placeholder="例如: 重慶北路三段與酒泉街口" required>
               </div>
 
-              <!-- 災害種類選擇：非必填、精簡為 7 項 -->
               <div class="col-12">
                 <label class="form-label fw-semibold d-block mb-1">
                   災害種類選擇
@@ -105,7 +101,6 @@
                   </select>
                 </div>
 
-                <!-- 已選取標籤區 -->
                 <div class="p-2 bg-light rounded border mb-3 d-flex flex-wrap align-items-center gap-1" id="selected-types-container" style="min-height: 40px;">
                   <small class="text-muted" id="types-placeholder-text">尚未選取種類，可從上方下拉選單點選加入災害種類</small>
                 </div>
@@ -132,7 +127,7 @@
           </form>
         </div>
 
-        <!-- 通報處理進度追蹤 (已調整為只顯示該登入帳號的案件) -->
+        <!-- 通報處理進度追蹤 -->
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <div>
@@ -165,10 +160,25 @@
         </div>
       </div>
 
-      <!-- 模組 2: 需求申請 (原模組 1，排至第 2 位) -->
+      <!-- 模組 2: 需求申請 (加入紅/橘警戒區域資格驗證提示條) -->
       <div class="tab-pane fade" id="panel-supply">
         <div class="pro-card p-4 shadow-sm mb-4">
-          <h4 class="fw-bold text-dark mb-3"><i class="bi bi-box-seam text-primary me-2"></i>需求申請</h4>
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-2"></i>需求申請</h4>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" style="font-size: 0.75rem;" onclick="simulateDisasterZone('red')">
+                模擬定位：北投紅區 (嚴重)
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-warning text-dark py-1 px-2" style="font-size: 0.75rem;" onclick="simulateDisasterZone('orange')">
+                模擬定位：大同橘區 (偏高)
+              </button>
+            </div>
+          </div>
+
+          <!-- 災害警戒區域定位狀態橫幅 -->
+          <div id="zone-eligibility-banner" class="alert alert-secondary py-2 px-3 small mb-3 d-flex align-items-center justify-content-between">
+            <span><i class="bi bi-geo-alt-fill me-1"></i>正在核驗您目前所在位置是否位於 <strong>紅色 (嚴重)</strong> 或 <strong>橘色 (偏高)</strong> 淹水警戒區...</span>
+          </div>
           
           <form id="form-supply" onsubmit="event.preventDefault(); promptConfirmSupplyModal();">
             <div class="row g-3">
@@ -190,7 +200,6 @@
                 <input type="text" class="form-control" id="supply-address" placeholder="請詳細填寫路段門牌，如：長安東路二段 45 號 1 樓" required>
               </div>
 
-              <!-- 下拉選單挑選品項 -->
               <div class="col-12">
                 <label class="form-label fw-bold d-block mb-2">申請資源類型與品項選擇（可挑選多項加入申請清單）：</label>
                 
@@ -222,7 +231,6 @@
                   </div>
                 </div>
 
-                <!-- 待送出品項清單 -->
                 <div class="card border">
                   <div class="card-header bg-white py-2 small fw-bold text-dark d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-cart-check text-primary me-1"></i>本次申請項目清單</span>
@@ -252,14 +260,14 @@
             </div>
 
             <div class="mt-4 text-end">
-              <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+              <button type="submit" id="btn-submit-supply" class="btn btn-primary px-4 py-2 fw-semibold">
                 <i class="bi bi-send-check me-1"></i> 送出申請
               </button>
             </div>
           </form>
         </div>
 
-        <!-- 我的申請歷史紀錄 (只呈現該帳號的申請紀錄) -->
+        <!-- 我的申請歷史紀錄 -->
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <div>
@@ -394,10 +402,9 @@
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- 模組 4: 防汛留言板 (原模組 5) -->
+      <!-- 模組 4: 防汛留言板 -->
       <div class="tab-pane fade" id="panel-board">
         <div class="pro-card p-4 shadow-sm">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
@@ -455,7 +462,7 @@
   </div>
 </div>
 
-<!-- 彈窗 1：資源調度詳細資訊彈窗 -->
+<!-- 彈窗 1 ~ 4 (完全保留不變) -->
 <div class="modal fade" id="orderProgressModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content pro-card border-0 shadow-lg">
@@ -466,58 +473,24 @@
       <div class="modal-body p-4 bg-light">
         <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
           <div class="row g-2 small">
-            <div class="col-md-6">
-              <span class="text-muted">調度單號：</span><strong class="font-monospace text-primary fs-6" id="modal-order-id"></strong>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">當前進度狀態：</span><span class="badge bg-warning text-dark fs-6" id="modal-order-status-badge"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">申請建立時間：</span><span class="font-monospace text-dark fw-bold" id="modal-order-created-at"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">申請人 / 電話：</span><span class="fw-semibold text-dark" id="modal-order-contact"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">指派審核社區：</span><span class="fw-semibold text-secondary" id="modal-order-community">大同區防汛備災中心</span>
-            </div>
-            <div class="col-12">
-              <span class="text-muted">受災送達地址：</span><span class="fw-semibold text-dark" id="modal-order-address"></span>
-            </div>
+            <div class="col-md-6"><span class="text-muted">調度單號：</span><strong class="font-monospace text-primary fs-6" id="modal-order-id"></strong></div>
+            <div class="col-md-6"><span class="text-muted">當前進度狀態：</span><span class="badge bg-warning text-dark fs-6" id="modal-order-status-badge"></span></div>
+            <div class="col-md-6"><span class="text-muted">申請建立時間：</span><span class="font-monospace text-dark fw-bold" id="modal-order-created-at"></span></div>
+            <div class="col-md-6"><span class="text-muted">申請人 / 電話：</span><span class="fw-semibold text-dark" id="modal-order-contact"></span></div>
+            <div class="col-md-6"><span class="text-muted">指派審核社區：</span><span class="fw-semibold text-secondary" id="modal-order-community">大同區防汛備災中心</span></div>
+            <div class="col-12"><span class="text-muted">受災送達地址：</span><span class="fw-semibold text-dark" id="modal-order-address"></span></div>
           </div>
         </div>
-
         <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
           <h6 class="fw-bold text-dark small mb-3"><i class="bi bi-truck text-success me-1"></i>物流調度進度追蹤</h6>
           <div class="stepper-compact-wrapper mb-2">
             <div class="stepper-compact-line" id="modal-progress-line" style="width: 0%;"></div>
-            
-            <div class="step-compact-item" id="mstep-1">
-              <div class="step-compact-circle"><i class="bi bi-file-earmark-text"></i></div>
-              <span class="step-compact-title">收到申請</span>
-              <small class="step-time text-success" id="mtime-1">09:11<br>(已立案)</small>
-            </div>
-
-            <div class="step-compact-item" id="mstep-2">
-              <div class="step-compact-circle"><i class="bi bi-clipboard-check"></i></div>
-              <span class="step-compact-title">審核核發</span>
-              <small class="step-time text-secondary" id="mtime-2">待審核</small>
-            </div>
-
-            <div class="step-compact-item" id="mstep-3">
-              <div class="step-compact-circle"><i class="bi bi-truck"></i></div>
-              <span class="step-compact-title">派送中</span>
-              <small class="step-time text-secondary" id="mtime-3">預計 30分</small>
-            </div>
-
-            <div class="step-compact-item" id="mstep-4">
-              <div class="step-compact-circle"><i class="bi bi-check2-circle"></i></div>
-              <span class="step-compact-title">已送達</span>
-              <small class="step-time text-secondary" id="mtime-4">待簽收</small>
-            </div>
+            <div class="step-compact-item" id="mstep-1"><div class="step-compact-circle"><i class="bi bi-file-earmark-text"></i></div><span class="step-compact-title">收到申請</span><small class="step-time text-success" id="mtime-1">09:11<br>(已立案)</small></div>
+            <div class="step-compact-item" id="mstep-2"><div class="step-compact-circle"><i class="bi bi-clipboard-check"></i></div><span class="step-compact-title">審核核發</span><small class="step-time text-secondary" id="mtime-2">待審核</small></div>
+            <div class="step-compact-item" id="mstep-3"><div class="step-compact-circle"><i class="bi bi-truck"></i></div><span class="step-compact-title">派送中</span><small class="step-time text-secondary" id="mtime-3">預計 30分</small></div>
+            <div class="step-compact-item" id="mstep-4"><div class="step-compact-circle"><i class="bi bi-check2-circle"></i></div><span class="step-compact-title">已送達</span><small class="step-time text-secondary" id="mtime-4">待簽收</small></div>
           </div>
         </div>
-
         <div class="card border-0 shadow-sm p-3 bg-white">
           <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-list-check text-primary me-1"></i>核定申請品項明細清單</h6>
           <div class="table-responsive">
@@ -531,8 +504,7 @@
                   <th style="text-align: center; white-space: nowrap;">單位</th>
                 </tr>
               </thead>
-              <tbody id="modal-items-table-body" class="small">
-              </tbody>
+              <tbody id="modal-items-table-body" class="small"></tbody>
             </table>
           </div>
         </div>
@@ -541,7 +513,6 @@
   </div>
 </div>
 
-<!-- 彈窗 2：災情案件進度與詳情彈窗 -->
 <div class="modal fade" id="disasterProgressModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content pro-card border-0 shadow-lg">
@@ -552,73 +523,34 @@
       <div class="modal-body p-4 bg-light">
         <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
           <div class="row g-2 small">
-            <div class="col-md-6">
-              <span class="text-muted">案件通報編號：</span><strong class="font-monospace text-danger fs-6" id="dmodal-report-no"></strong>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">目前處理進度：</span><span class="badge bg-primary fs-6" id="dmodal-status-badge"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">通報時間：</span><span class="font-monospace text-dark fw-bold" id="dmodal-time"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">緊急程度評級：</span><span class="badge bg-warning text-dark" id="dmodal-urgency"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">通報市民：</span><span class="fw-semibold text-dark" id="dmodal-username"></span>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">通報詳細地點：</span><span class="fw-bold text-dark" id="dmodal-location"></span>
-            </div>
-            <div class="col-12 mt-2 pt-2 border-top">
-              <span class="text-muted">現場災情描述：</span>
-              <p class="mb-0 fw-semibold text-secondary" id="dmodal-desc" style="white-space: pre-line;"></p>
-            </div>
+            <div class="col-md-6"><span class="text-muted">案件通報編號：</span><strong class="font-monospace text-danger fs-6" id="dmodal-report-no"></strong></div>
+            <div class="col-md-6"><span class="text-muted">目前處理進度：</span><span class="badge bg-primary fs-6" id="dmodal-status-badge"></span></div>
+            <div class="col-md-6"><span class="text-muted">通報時間：</span><span class="font-monospace text-dark fw-bold" id="dmodal-time"></span></div>
+            <div class="col-md-6"><span class="text-muted">緊急程度評級：</span><span class="badge bg-warning text-dark" id="dmodal-urgency"></span></div>
+            <div class="col-md-6"><span class="text-muted">通報市民：</span><span class="fw-semibold text-dark" id="dmodal-username"></span></div>
+            <div class="col-md-6"><span class="text-muted">通報詳細地點：</span><span class="fw-bold text-dark" id="dmodal-location"></span></div>
+            <div class="col-12 mt-2 pt-2 border-top"><span class="text-muted">現場災情描述：</span><p class="mb-0 fw-semibold text-secondary" id="dmodal-desc" style="white-space: pre-line;"></p></div>
           </div>
         </div>
-
         <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
           <h6 class="fw-bold text-dark small mb-3"><i class="bi bi-clock-history text-danger me-1"></i>應變應急處理階段追蹤</h6>
           <div class="stepper-compact-wrapper mb-2">
             <div class="stepper-compact-line" id="dmodal-progress-line" style="width: 0%;"></div>
-            
-            <div class="step-compact-item" id="dstep-1">
-              <div class="step-compact-circle"><i class="bi bi-receipt"></i></div>
-              <span class="step-compact-title">通報受理</span>
-              <small class="step-time text-success" id="dtime-1">08:30<br>(已受理)</small>
-            </div>
-
-            <div class="step-compact-item" id="dstep-2">
-              <div class="step-compact-circle"><i class="bi bi-people"></i></div>
-              <span class="step-compact-title">派員現場</span>
-              <small class="step-time text-secondary" id="dtime-2">09:10<br>(排案中)</small>
-            </div>
-
-            <div class="step-compact-item" id="dstep-3">
-              <div class="step-compact-circle"><i class="bi bi-gear-wide-connected"></i></div>
-              <span class="step-compact-title">搶修排除</span>
-              <small class="step-time text-secondary" id="dtime-3">預估 11:00</small>
-            </div>
-
-            <div class="step-compact-item" id="dstep-4">
-              <div class="step-compact-circle"><i class="bi bi-check2-all"></i></div>
-              <span class="step-compact-title">結案驗收</span>
-              <small class="step-time text-secondary" id="dtime-4">待驗收</small>
-            </div>
+            <div class="step-compact-item" id="dstep-1"><div class="step-compact-circle"><i class="bi bi-receipt"></i></div><span class="step-compact-title">通報受理</span><small class="step-time text-success" id="dtime-1">08:30<br>(已受理)</small></div>
+            <div class="step-compact-item" id="dstep-2"><div class="step-compact-circle"><i class="bi bi-people"></i></div><span class="step-compact-title">派員現場</span><small class="step-time text-secondary" id="dtime-2">09:10<br>(排案中)</small></div>
+            <div class="step-compact-item" id="dstep-3"><div class="step-compact-circle"><i class="bi bi-gear-wide-connected"></i></div><span class="step-compact-title">搶修排除</span><small class="step-time text-secondary" id="dtime-3">預估 11:00</small></div>
+            <div class="step-compact-item" id="dstep-4"><div class="step-compact-circle"><i class="bi bi-check2-all"></i></div><span class="step-compact-title">結案驗收</span><small class="step-time text-secondary" id="dtime-4">待驗收</small></div>
           </div>
         </div>
-
         <div class="card border-0 shadow-sm p-3 bg-white text-center" id="dmodal-img-card">
           <h6 class="fw-bold text-dark small mb-2 text-start"><i class="bi bi-image text-primary me-1"></i>通報現場即時相片</h6>
           <img id="dmodal-img" src="" class="img-fluid rounded border shadow-sm mx-auto" style="max-height: 280px; object-fit: contain;">
         </div>
-
       </div>
     </div>
   </div>
 </div>
 
-<!-- 彈窗 3：需求申請送出前確認清單 Modal -->
 <div class="modal fade" id="confirmSupplySubmitModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content pro-card border-0 shadow-lg">
@@ -628,21 +560,13 @@
       </div>
       <div class="modal-body p-4 bg-light">
         <p class="text-secondary small mb-3">請確認以下受援調度資料是否正確：</p>
-        
         <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
           <div class="row g-2 small">
-            <div class="col-md-6">
-              <span class="text-muted">申請人姓名：</span><strong class="text-dark" id="cmodal-name"></strong>
-            </div>
-            <div class="col-md-6">
-              <span class="text-muted">聯絡電話：</span><strong class="text-dark" id="cmodal-phone"></strong>
-            </div>
-            <div class="col-12 mt-2 pt-2 border-top">
-              <span class="text-muted">受災詳細地址：</span><strong class="text-dark" id="cmodal-address"></strong>
-            </div>
+            <div class="col-md-6"><span class="text-muted">申請人姓名：</span><strong class="text-dark" id="cmodal-name"></strong></div>
+            <div class="col-md-6"><span class="text-muted">聯絡電話：</span><strong class="text-dark" id="cmodal-phone"></strong></div>
+            <div class="col-12 mt-2 pt-2 border-top"><span class="text-muted">受災詳細地址：</span><strong class="text-dark" id="cmodal-address"></strong></div>
           </div>
         </div>
-
         <div class="card border-0 shadow-sm p-3 bg-white mb-3">
           <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-list-check text-primary me-1"></i>核定申請品項明細清單</h6>
           <div class="table-responsive">
@@ -656,12 +580,10 @@
                   <th style="text-align: center; white-space: nowrap;">單位</th>
                 </tr>
               </thead>
-              <tbody id="cmodal-items-table-body" class="small">
-              </tbody>
+              <tbody id="cmodal-items-table-body" class="small"></tbody>
             </table>
           </div>
         </div>
-
         <div class="d-flex justify-content-end gap-2">
           <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">返回修改</button>
           <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" onclick="executeRealSupplySubmit()">
@@ -673,7 +595,6 @@
   </div>
 </div>
 
-<!-- 彈窗 4：災情通報送出前確認 Modal -->
 <div class="modal fade" id="confirmDisasterSubmitModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content pro-card border-0 shadow-lg">
@@ -686,10 +607,7 @@
         <div class="p-3 bg-light rounded border mb-3 small">
           <div class="mb-2"><strong>通報區域：</strong><span id="cdmodal-district"></span></div>
           <div class="mb-2"><strong>積淹水地點：</strong><span id="cdmodal-loc"></span></div>
-          <div class="mb-2 d-flex align-items-center flex-wrap">
-            <strong class="me-1">災害種類：</strong>
-            <span id="cdmodal-type"></span>
-          </div>
+          <div class="mb-2 d-flex align-items-center flex-wrap"><strong class="me-1">災害種類：</strong><span id="cdmodal-type"></span></div>
           <div class="mb-2 mt-2 pt-2 border-top">
             <strong class="d-block mb-1">災情描述摘要：</strong>
             <div id="cdmodal-desc" class="p-2 bg-white rounded border text-dark fw-normal" style="white-space: pre-line; line-height: 1.6;"></div>

@@ -33,26 +33,48 @@ def generate_custom_order_no(cur, prefix="REQ"):
     seq_num = (result["count"] if result else 0) + 1
     return f"{prefix}-{today_str}-{seq_num:03d}"
 
-DISASTER_ZONES = [
-    {"name": "中山區熱點", "lat": 25.0685, "lon": 121.5325},
-    {"name": "士林社子島", "lat": 25.0855, "lon": 121.4982},
-    {"name": "文山指南溪", "lat": 24.9852, "lon": 121.5768},
-    {"name": "大同斯文里", "lat": 25.0642, "lon": 121.5133}
+# 紅(嚴重)與橘(偏高)災害警戒區座標與半徑(公尺)，與預警避難地圖完全同步
+RED_ORANGE_ZONES = [
+    {"name": "北投低窪警戒區", "district": "北投區", "level": "red", "level_text": "嚴重 (紅區)", "lat": 25.1325, "lon": 121.4988, "radius_km": 2.5},
+    {"name": "大同延平北路段", "district": "大同區", "level": "orange", "level_text": "偏高 (橘區)", "lat": 25.0655, "lon": 121.5145, "radius_km": 2.2},
+    {"name": "中山低窪警戒區", "district": "中山區", "level": "orange", "level_text": "偏高 (橘區)", "lat": 25.0685, "lon": 121.5325, "radius_km": 2.0}
 ]
 
-def is_in_disaster_zone(lat, lon):
-    if not lat or not lon:
-        return False
+# 11個行政區備災中心經緯度（供跨區調度距離計算）
+DISTRICT_COORDS = {
+    "北投區": (25.1325, 121.4988),
+    "士林區": (25.0920, 121.5260),
+    "中山區": (25.0685, 121.5325),
+    "大同區": (25.0655, 121.5145),
+    "內湖區": (25.0830, 121.5868),
+    "松山區": (25.0500, 121.5575),
+    "中正區": (25.0385, 121.5190),
+    "大安區": (25.0315, 121.5435),
+    "信義區": (25.0305, 121.5720),
+    "南港區": (25.0550, 121.6070),
+    "文山區": (24.9852, 121.5768)
+}
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = math.sin(d_lat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+def check_red_orange_zone(lat, lon):
+    if lat is None or lon is None:
+        return None
     try:
         u_lat = float(lat)
         u_lon = float(lon)
-        for zone in DISASTER_ZONES:
-            dist = math.sqrt((u_lat - zone['lat'])**2 + (u_lon - zone['lon'])**2)
-            if dist <= 0.08:
-                return True
+        for zone in RED_ORANGE_ZONES:
+            dist = haversine_km(u_lat, u_lon, zone["lat"], zone["lon"])
+            if dist <= zone["radius_km"]:
+                return zone
     except Exception:
-        return False
-    return False
+        return None
+    return None
 
 # ================= 頁面路由與權限控管 =================
 
@@ -245,7 +267,7 @@ def api_flood_summary():
         if cur: cur.close()
         if conn: conn.close()
 
-# 災情通報 API (增加 strict 過濾，前台通報進度專屬當前帳號)
+# 災情通報 API
 @app.route("/api/disaster-report", methods=["GET", "POST"])
 def api_disaster_report():
     conn = None
@@ -310,7 +332,6 @@ def api_disaster_report():
             user_id = session.get("user_id")
             user_name = session.get("name")
 
-            # 當 scope=all 時（跑馬燈專用），回傳全體紀錄
             if scope == "all":
                 cur.execute("""
                     SELECT report_id, 
@@ -326,7 +347,6 @@ def api_disaster_report():
                     ORDER BY report_id DESC LIMIT 50
                 """)
             else:
-                # 嚴格只回傳當前帳號的通報進度
                 cur.execute("""
                     SELECT report_id, 
                            COALESCE(report_no, 'RPT-20260915-01') as report_no,
@@ -393,7 +413,7 @@ def api_audit_disaster_report():
         if cur: cur.close()
         if conn: conn.close()
 
-# 需求申請 API (支援 scope 過濾：scope=mine 嚴格只回傳自己的申請歷史)
+# 需求申請 API（嚴格驗證必須位於紅色嚴重或橘色偏高警戒區）
 @app.route("/api/supply-request", methods=["GET", "POST"])
 def api_supply_request():
     conn = None
@@ -411,10 +431,11 @@ def api_supply_request():
             lat = data.get("latitude")
             lon = data.get("longitude")
 
-            if not is_in_disaster_zone(lat, lon):
+            matched_zone = check_red_orange_zone(lat, lon)
+            if not matched_zone:
                 return jsonify({
                     "status": "error",
-                    "message": "經 GPS 定位比對，您目前所在位置未在防汛警戒災區範圍內，無法啟動緊急調度申請！"
+                    "message": "您目前所在位置不在紅色（嚴重）或橘色（偏高）淹水警戒區域內，僅限災害發生區域可提出需求申請！"
                 }), 403
 
             if not items:
@@ -454,7 +475,7 @@ def api_supply_request():
                     combined_type_str,
                     session.get("username", "guest"),
                     session.get("name", "王小明"),
-                    district,
+                    matched_zone["district"],
                     combined_item_str,
                     len(items),
                     contact_phone,
@@ -463,7 +484,7 @@ def api_supply_request():
                     lon,
                     "收到申請",
                     json.dumps(items, ensure_ascii=False),
-                    "大同區防汛備災中心"
+                    f"{matched_zone['district']}防汛備災中心"
                 )
             )
             created_row = cur.fetchone()
@@ -482,7 +503,6 @@ def api_supply_request():
             current_user = session.get("username", "guest")
             current_name = session.get("name", "王小明")
 
-            # 當 scope=all 時（後台管理端審核工作台專用），才回傳全體
             if scope == "all" and session.get("role") == "community":
                 cur.execute("""
                     SELECT id, order_no, resource_type, user_name, district, 
@@ -495,7 +515,6 @@ def api_supply_request():
                     LIMIT 50
                 """)
             else:
-                # 嚴格只回傳當前登入帳號的申請歷史
                 cur.execute("""
                     SELECT id, order_no, resource_type, user_name, district, 
                            item_name, quantity, contact_phone, 
@@ -526,7 +545,7 @@ def api_supply_request():
         if cur: cur.close()
         if conn: conn.close()
 
-# 管理端審核物資申請並自動扣庫存
+# 管理端審核物資申請並自動扣除 Neon supplies 資料表庫存
 @app.route("/api/supply-request/audit", methods=["POST"])
 def api_audit_supply_request():
     conn = None
@@ -539,10 +558,11 @@ def api_audit_supply_request():
         action = data.get("action", "approve")
 
         if action == "approve":
-            cur.execute("SELECT items_json FROM supplies_requests WHERE order_no = %s", (order_no,))
+            cur.execute("SELECT items_json, district FROM supplies_requests WHERE order_no = %s", (order_no,))
             req_row = cur.fetchone()
             if req_row and req_row.get("items_json"):
                 items = req_row["items_json"]
+                dist = req_row.get("district") or "大同區"
                 if isinstance(items, str):
                     items = json.loads(items)
                 
@@ -551,12 +571,16 @@ def api_audit_supply_request():
                     qty = int(it.get("quantity", 0))
                     cur.execute("""
                         UPDATE supplies 
-                        SET quantity = GREATEST(0, quantity - %s)
-                        WHERE item_name LIKE %s
-                    """, (qty, f"%{it_name}%"))
+                        SET quantity = GREATEST(0, quantity - %s), updated_at = NOW()
+                        WHERE supply_id = (
+                            SELECT supply_id FROM supplies 
+                            WHERE item_name LIKE %s AND current_location LIKE %s 
+                            LIMIT 1
+                        )
+                    """, (qty, f"%{it_name}%", f"%{dist}%"))
 
             cur.execute("UPDATE supplies_requests SET status = '審核核發' WHERE order_no = %s", (order_no,))
-            msg = f"訂單 {order_no} 已審核核發，庫存已自動同步扣減！"
+            msg = f"訂單 {order_no} 已審核核發，資料庫庫存已同步扣減！"
         else:
             cur.execute("UPDATE supplies_requests SET status = '已婉拒' WHERE order_no = %s", (order_no,))
             msg = f"訂單 {order_no} 已婉拒申請。"
@@ -599,7 +623,7 @@ def api_volunteer_tasks():
                 WHERE task_id = %s
             """, (volunteer_user, task_id))
             conn.commit()
-            return jsonify({"status": "success", "message": f"接案成功！志工 {volunteer_user} 前往現場支援中（完成後需由申請者驗收核發點數）！"})
+            return jsonify({"status": "success", "message": f"接案成功！志工 {volunteer_user} 前往現場支援中！"})
     except Exception as e:
         if conn: conn.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -669,6 +693,7 @@ def api_create_volunteer_task():
         if cur: cur.close()
         if conn: conn.close()
 
+# 物資庫存 API
 @app.route("/api/community-resources", methods=["GET", "POST", "DELETE"])
 def api_community_resources():
     conn = None
@@ -677,23 +702,39 @@ def api_community_resources():
         conn = get_db()
         cur = conn.cursor()
         if request.method == "GET":
-            cur.execute("SELECT * FROM supplies ORDER BY id ASC")
+            cur.execute("""
+                SELECT supply_id AS id, owner_id, item_name, 
+                       COALESCE(item_type, '物') AS item_type, 
+                       quantity, COALESCE(unit, '個') AS unit, 
+                       COALESCE(current_location, '備災中心') AS current_location,
+                       TO_CHAR(COALESCE(updated_at, NOW()), 'YYYY-MM-DD HH24:MI') AS updated_at_str
+                FROM supplies 
+                ORDER BY supply_id ASC
+            """)
             rows = cur.fetchall()
             return jsonify({"status": "success", "data": rows})
         elif request.method == "POST":
             d = request.json or {}
+            owner_id = session.get("user_id", 1)
+            item_name = d.get("name", "").strip()
+            item_type = d.get("item_type", "物").strip()
+            quantity = int(d.get("quantity", 1))
+            unit = d.get("unit", "包").strip()
+            current_location = d.get("location", "大同區防汛備災中心").strip()
+
             cur.execute(
                 """
-                INSERT INTO supplies (item_name, location, quantity, status)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO supplies (owner_id, item_name, item_type, quantity, unit, current_location, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                RETURNING supply_id
                 """,
-                (d.get("name"), d.get("location"), int(d.get("quantity", 1)), d.get("status", "充足"))
+                (owner_id, item_name, item_type, quantity, unit, current_location)
             )
             conn.commit()
-            return jsonify({"status": "success", "message": "物資項目已新增至資料庫！"})
+            return jsonify({"status": "success", "message": "物資項目已成功入庫！"})
         elif request.method == "DELETE":
             res_id = request.args.get("id")
-            cur.execute("DELETE FROM supplies WHERE id = %s", (res_id,))
+            cur.execute("DELETE FROM supplies WHERE supply_id = %s", (res_id,))
             conn.commit()
             return jsonify({"status": "success", "message": "項目已成功刪除！"})
     except Exception as e:
@@ -703,17 +744,117 @@ def api_community_resources():
         if cur: cur.close()
         if conn: conn.close()
 
-@app.route("/api/community-demands", methods=["GET", "POST"])
-def api_community_demands():
-    if request.method == "POST":
-        return jsonify({"status": "success", "message": "調度申請已受理，已啟動跨社區資源派送！"})
-    return jsonify({
-        "status": "success",
-        "data": [
-            {"community_name": "明勝里社區防災會", "category": "機具需求", "item_name": "移動式抽水泵浦", "quantity": 2, "source_type": "合作機構", "status": "派送中"},
-            {"community_name": "大同區聯合防汛會", "category": "物資需求", "item_name": "防汛沙包 100 包", "quantity": 100, "source_type": "社區互助", "status": "已送達"}
-        ]
-    })
+# 智慧跨區調度推薦計算 API (系統先依「庫存量多寡優先」+「社區距離最近」排序推薦，再供管理員選擇)
+@app.route("/api/supply-recommend", methods=["GET"])
+def api_supply_recommend():
+    target_dist = request.args.get("target_district", "大同區").strip()
+    item_name = request.args.get("item_name", "高密度防汛沙包").strip()
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT supply_id, item_name, quantity, unit, current_location
+            FROM supplies
+            WHERE item_name LIKE %s
+        """, (f"%{item_name}%",))
+        rows = cur.fetchall()
+
+        target_lat, target_lon = DISTRICT_COORDS.get(target_dist, (25.0655, 121.5145))
+
+        candidates = []
+        for r in rows:
+            loc = r.get("current_location") or ""
+            # 解析該庫存所屬行政區
+            src_dist = None
+            for d_name in DISTRICT_COORDS.keys():
+                if d_name in loc:
+                    src_dist = d_name
+                    break
+            if not src_dist or src_dist == target_dist:
+                continue
+
+            qty = int(r.get("quantity") or 0)
+            if qty <= 0:
+                continue
+
+            src_lat, src_lon = DISTRICT_COORDS[src_dist]
+            dist_km = round(haversine_km(src_lat, src_lon, target_lat, target_lon), 2)
+
+            # 綜合推薦評分：庫存數量佔 65% 權重，距離越近佔 35% 權重
+            stock_score = min(qty / 5.0, 100.0)
+            dist_score = max(0.0, 100.0 - (dist_km * 8.0))
+            total_score = round((stock_score * 0.65) + (dist_score * 0.35), 1)
+
+            candidates.append({
+                "district": src_dist,
+                "location": loc,
+                "item_name": r["item_name"],
+                "quantity": qty,
+                "unit": r.get("unit") or "個",
+                "distance_km": dist_km,
+                "score": total_score
+            })
+
+        # 排序規則：第一優先庫存數量多寡 (qty 降冪)，第二優先距離最近 (distance_km 升冪)
+        candidates.sort(key=lambda x: (-x["quantity"], x["distance_km"]))
+
+        return jsonify({
+            "status": "success",
+            "target_district": target_dist,
+            "item_name": item_name,
+            "recommendations": candidates[:5]
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+# 跨區物資調撥 API
+@app.route("/api/supply-transfer", methods=["POST"])
+def api_supply_transfer():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        d = request.json or {}
+        from_dist = d.get("from_district", "").strip()
+        to_dist = d.get("to_district", "").strip()
+        item_name = d.get("item_name", "").strip()
+        qty = int(d.get("quantity", 10))
+
+        cur.execute("""
+            UPDATE supplies 
+            SET quantity = GREATEST(0, quantity - %s), updated_at = NOW()
+            WHERE supply_id = (
+                SELECT supply_id FROM supplies 
+                WHERE item_name LIKE %s AND current_location LIKE %s 
+                LIMIT 1
+            )
+        """, (qty, f"%{item_name}%", f"%{from_dist}%"))
+
+        cur.execute("""
+            UPDATE supplies 
+            SET quantity = quantity + %s, updated_at = NOW()
+            WHERE supply_id = (
+                SELECT supply_id FROM supplies 
+                WHERE item_name LIKE %s AND current_location LIKE %s 
+                LIMIT 1
+            )
+        """, (qty, f"%{item_name}%", f"%{to_dist}%"))
+
+        conn.commit()
+        return jsonify({"status": "success", "message": f"已完成【{from_dist} → {to_dist}】({item_name} x{qty}) 跨區調撥！"})
+    except Exception as e:
+        if conn: conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 @app.route("/api/user-profile/update", methods=["POST"])
 def api_update_user_profile():
@@ -752,44 +893,6 @@ def api_update_user_profile():
     finally:
         if cur: cur.close()
         if conn: conn.close()
-
-@app.route("/api/xgb-flood-risk")
-def api_xgb_flood_risk():
-    district = request.args.get("district", "北投區")
-    xgb_base_url = os.getenv("XGB_API_BASE", "http://127.0.0.1:3000/api")
-    target_url = f"{xgb_base_url}/flood-risk?district={urllib.parse.quote(district)}"
-    try:
-        req = urllib.request.Request(target_url, headers={"User-Agent": "Flask-Frontend"})
-        with urllib.request.urlopen(req, timeout=1.5) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode())
-                return jsonify({"status": "success", "data": data, "source": "ai_live_model"})
-    except Exception:
-        pass
-    simulated_prob = 0.725 if district in ["北投區", "士林區", "松山區"] else 0.210
-    will_flood = simulated_prob > 0.5
-    fallback_data = {
-        "selected": {
-            "district": district,
-            "zone": "6312",
-            "year": 2026,
-            "probability": simulated_prob,
-            "willFlood": will_flood,
-            "riskLevel": "高度淹水風險" if will_flood else "正常水情安全"
-        },
-        "predictions": [
-            {
-                "district": district,
-                "zone": "6312",
-                "year": 2026,
-                "probability": simulated_prob,
-                "willFlood": will_flood,
-                "riskLevel": "高度淹水風險" if will_flood else "正常水情安全"
-            }
-        ],
-        "liveSignals": { "status": "simulated_ai_fallback" }
-    }
-    return jsonify({"status": "success", "data": fallback_data, "source": "ai_fallback_engine"})
 
 @app.route("/api/messages", methods=["GET", "POST"])
 def api_messages():
