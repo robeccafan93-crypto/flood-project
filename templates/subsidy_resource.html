@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row">
   <!-- 管理端專屬側欄 -->
-  <div class="col-md-3 mb-4">
+  <div class="col-lg-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
       <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action"><i class="bi bi-clipboard2-check text-danger me-2"></i>案件處理</a>
       <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam text-warning me-2"></i>物資庫存</a>
@@ -22,11 +22,11 @@
   </div>
 
   <!-- 主內容 -->
-  <div class="col-md-9">
+  <div class="col-lg-9">
     
     <!-- 模組 A: 分區域四大專業組別志工名冊 -->
-    <div class="pro-card p-4 shadow-sm bg-white border rounded mb-4">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <div class="pro-card p-3 p-md-4 shadow-sm bg-white border rounded mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
         <div>
           <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-person-badge text-primary"></i> 區域防汛志工分組名冊
@@ -34,14 +34,21 @@
           <small class="text-muted">依行政區與專業四大組別檢視志工名單、技能專長與合格專業證照</small>
         </div>
         
-        <!-- 行政區切換器 -->
-        <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+        <div class="d-flex align-items-center gap-2">
           <label class="small text-muted fw-bold">選擇行政區：</label>
           <select id="select-volunteer-region" class="form-select form-select-sm border-primary fw-bold text-primary" style="width: 130px;" onchange="renderRegionVolunteers(this.value)">
             <option value="中山區" selected>中山區</option>
             <option value="大同區">大同區</option>
             <option value="士林區">士林區</option>
             <option value="北投區">北投區</option>
+            <option value="中正區">中正區</option>
+            <option value="大安區">大安區</option>
+            <option value="內湖區">內湖區</option>
+            <option value="松山區">松山區</option>
+            <option value="萬華區">萬華區</option>
+            <option value="信義區">信義區</option>
+            <option value="南港區">南港區</option>
+            <option value="文山區">文山區</option>
           </select>
         </div>
       </div>
@@ -52,26 +59,25 @@
         <!-- 1. 醫療急救組 -->
         <div class="accordion-item mb-2 border rounded">
           <h2 class="accordion-header">
-            <button class="accordion-button py-2 bg-light text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#groupMed">
+            <button class="accordion-button collapsed py-2 bg-light text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#groupMed">
               <i class="bi bi-heart-pulse-fill text-danger me-2"></i> 醫療急救組
-              <span class="badge bg-danger ms-2" id="badge-med-count">2 位</span>
+              <span class="badge bg-danger ms-2" id="badge-med-count">0 位</span>
             </button>
           </h2>
-          <div id="groupMed" class="accordion-collapse collapse show" data-bs-parent="#volunteerGroupAccordion">
-            <div class="accordion-body p-0">
+          <div id="groupMed" class="accordion-collapse collapse" data-bs-parent="#volunteerGroupAccordion">
+            <div class="accordion-body p-2 p-md-0">
               <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
+                <table class="table table-sm table-hover align-middle mb-0 mobile-card-table">
                   <thead class="table-light small">
                     <tr>
                       <th>姓名</th>
                       <th>專長技能</th>
-                      <th>持有效專業證照</th>
+                      <th>持有效專業證照 / 來源</th>
                       <th>聯絡電話</th>
                       <th style="text-align: center;">服務狀態</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-group-med" class="small">
-                  </tbody>
+                  <tbody id="tbody-group-med" class="small"></tbody>
                 </table>
               </div>
             </div>
@@ -83,24 +89,23 @@
           <h2 class="accordion-header">
             <button class="accordion-button collapsed py-2 bg-light text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#groupElec">
               <i class="bi bi-tools text-warning me-2"></i> 水電維修組
-              <span class="badge bg-warning text-dark ms-2" id="badge-elec-count">2 位</span>
+              <span class="badge bg-warning text-dark ms-2" id="badge-elec-count">0 位</span>
             </button>
           </h2>
           <div id="groupElec" class="accordion-collapse collapse" data-bs-parent="#volunteerGroupAccordion">
-            <div class="accordion-body p-0">
+            <div class="accordion-body p-2 p-md-0">
               <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
+                <table class="table table-sm table-hover align-middle mb-0 mobile-card-table">
                   <thead class="table-light small">
                     <tr>
                       <th>姓名</th>
                       <th>專長技能</th>
-                      <th>持有效專業證照</th>
+                      <th>持有效專業證照 / 來源</th>
                       <th>聯絡電話</th>
                       <th style="text-align: center;">服務狀態</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-group-elec" class="small">
-                  </tbody>
+                  <tbody id="tbody-group-elec" class="small"></tbody>
                 </table>
               </div>
             </div>
@@ -112,24 +117,23 @@
           <h2 class="accordion-header">
             <button class="accordion-button collapsed py-2 bg-light text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#groupMach">
               <i class="bi bi-gear-fill text-primary me-2"></i> 機具操作組
-              <span class="badge bg-primary ms-2" id="badge-mach-count">2 位</span>
+              <span class="badge bg-primary ms-2" id="badge-mach-count">0 位</span>
             </button>
           </h2>
           <div id="groupMach" class="accordion-collapse collapse" data-bs-parent="#volunteerGroupAccordion">
-            <div class="accordion-body p-0">
+            <div class="accordion-body p-2 p-md-0">
               <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
+                <table class="table table-sm table-hover align-middle mb-0 mobile-card-table">
                   <thead class="table-light small">
                     <tr>
                       <th>姓名</th>
                       <th>專長技能</th>
-                      <th>持有效專業證照</th>
+                      <th>持有效專業證照 / 來源</th>
                       <th>聯絡電話</th>
                       <th style="text-align: center;">服務狀態</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-group-mach" class="small">
-                  </tbody>
+                  <tbody id="tbody-group-mach" class="small"></tbody>
                 </table>
               </div>
             </div>
@@ -141,24 +145,23 @@
           <h2 class="accordion-header">
             <button class="accordion-button collapsed py-2 bg-light text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#groupDrive">
               <i class="bi bi-truck text-success me-2"></i> 車輛駕駛組
-              <span class="badge bg-success ms-2" id="badge-drive-count">2 位</span>
+              <span class="badge bg-success ms-2" id="badge-drive-count">0 位</span>
             </button>
           </h2>
           <div id="groupDrive" class="accordion-collapse collapse" data-bs-parent="#volunteerGroupAccordion">
-            <div class="accordion-body p-0">
+            <div class="accordion-body p-2 p-md-0">
               <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
+                <table class="table table-sm table-hover align-middle mb-0 mobile-card-table">
                   <thead class="table-light small">
                     <tr>
                       <th>姓名</th>
                       <th>專長技能</th>
-                      <th>持有效專業證照</th>
+                      <th>持有效專業證照 / 來源</th>
                       <th>聯絡電話</th>
                       <th style="text-align: center;">服務狀態</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-group-drive" class="small">
-                  </tbody>
+                  <tbody id="tbody-group-drive" class="small"></tbody>
                 </table>
               </div>
             </div>
@@ -168,9 +171,9 @@
       </div>
     </div>
 
-    <!-- 模組 B: 志工人力排班與出勤看板 -->
-    <div class="pro-card p-4 shadow-sm bg-white border rounded">
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <!-- 模組 B: 志工人力排班與出勤管制看板 -->
+    <div class="pro-card p-3 p-md-4 shadow-sm bg-white border rounded">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
         <div>
           <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-calendar-check-fill text-success"></i> 志工人力排班與出勤管制看板
@@ -182,22 +185,44 @@
         </button>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover align-middle table-custom mb-0">
-          <thead>
-            <tr>
-              <th style="white-space: nowrap; width: 90px;">任務編號</th>
-              <th style="white-space: nowrap; width: 130px;">連動災情</th>
-              <th>任務標題</th>
-              <th>地點</th>
-              <th style="white-space: nowrap; width: 110px; text-align: center;">出勤狀態</th>
-              <th style="white-space: nowrap; width: 90px; text-align: center;">獎勵點數</th>
-              <th style="white-space: nowrap; width: 90px; text-align: center;">詳情</th>
-            </tr>
-          </thead>
-          <tbody id="admin-volunteers-tbody">
-          </tbody>
-        </table>
+      <!-- 篩選與搜尋工具列 -->
+      <div class="row g-2 mb-3 p-2 bg-light rounded border">
+        <div class="col-12 col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" id="vol-board-keyword" class="form-control" placeholder="搜尋單號/任務/地點/志工..." oninput="filterAndRenderVolunteerBoard()">
+          </div>
+        </div>
+        <div class="col-4 col-md-3">
+          <select id="vol-board-district" class="form-select form-select-sm" onchange="filterAndRenderVolunteerBoard()">
+            <option value="ALL">全部行政區</option>
+            <option value="北投區">北投區</option><option value="士林區">士林區</option>
+            <option value="中山區">中山區</option><option value="大同區">大同區</option>
+            <option value="內湖區">內湖區</option><option value="松山區">松山區</option>
+            <option value="萬華區">萬華區</option><option value="中正區">中正區</option>
+            <option value="大安區">大安區</option><option value="信義區">信義區</option>
+            <option value="南港區">南港區</option><option value="文山區">文山區</option>
+          </select>
+        </div>
+        <div class="col-4 col-md-3">
+          <select id="vol-board-status" class="form-select form-select-sm" onchange="filterAndRenderVolunteerBoard()">
+            <option value="ALL">全部出勤狀態</option>
+            <option value="待派案">待派案 / 招募中</option>
+            <option value="出勤中">出勤支援中</option>
+            <option value="已完成">已完成結案</option>
+          </select>
+        </div>
+        <div class="col-4 col-md-2">
+          <select id="vol-board-sort" class="form-select form-select-sm border-success text-success fw-bold" onchange="filterAndRenderVolunteerBoard()">
+            <option value="desc">由新到舊</option>
+            <option value="asc">由舊到新</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 點擊展開手風琴列表 -->
+      <div class="accordion" id="adminVolunteersAccordion">
+        <div class="text-center text-muted py-4 small">載入出勤與災情連動資料中...</div>
       </div>
     </div>
 
@@ -212,7 +237,7 @@
         <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill text-success me-2"></i>手動發布志工出勤排班任務</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-4">
+      <div class="modal-body p-3 p-md-4">
         <form id="form-create-task">
           <div class="mb-3">
             <label class="form-label fw-semibold">任務名稱/主題 <span class="text-danger">*</span></label>
@@ -246,57 +271,13 @@
 
 {% block extra_js %}
 <script>
-// 行政區志工四大組別模擬資料庫 (包含專長技能與證照)
-const REGION_VOLUNTEERS = {
-  "中山區": {
-    med: [
-      { name: "陳雅婷", skill: "創傷包紮、心肺復甦", license: "EMT-1 初級救護技術員證照", phone: "0912-333-111", status: "常態待命中" },
-      { name: "黃俊傑", skill: "災區檢傷、包紮護理", license: "BLS 基本救命術合格證", phone: "0921-444-222", status: "已出勤" }
-    ],
-    elec: [
-      { name: "張勝雄", skill: "地下室緊急斷電、線路抽換", license: "甲種電匠 / 室內配線乙級技術士", phone: "0933-555-888", status: "常態待命中" },
-      { name: "李國樑", skill: "低窪泵浦配電檢測", license: "自來水管配管乙級", phone: "0911-666-999", status: "常態待命中" }
-    ],
-    mach: [
-      { name: "李志強", skill: "沉水式抽水機組裝與操作", license: "重機械操作 (抽水機設備)", phone: "0955-777-123", status: "常態待命中" },
-      { name: "王大偉", skill: "柴油發電機檢修保養", license: "發電機動力檢驗合格", phone: "0932-888-234", status: "出勤支援中" }
-    ],
-    drive: [
-      { name: "林建安", skill: "高底盤四驅車涉水駕駛", license: "職業大貨車駕照 / 防禦駕駛認證", phone: "0972-111-345", status: "常態待命中" },
-      { name: "趙崇禮", skill: "緊急物資運載與避難導引", license: "職業小客車駕照", phone: "0988-222-456", status: "常態待命中" }
-    ]
-  },
-  "大同區": {
-    med: [
-      { name: "郭怡君", skill: "急救包紮、長者照護", license: "護理師證書 / EMT-2", phone: "0910-123-456", status: "常態待命中" }
-    ],
-    elec: [
-      { name: "周明達", skill: "受災配電箱防水隔離", license: "室內配線甲級證照", phone: "0922-234-567", status: "常態待命中" }
-    ],
-    mach: [
-      { name: "許慶華", skill: "大馬力抽水機操控", license: "重型機具操作合格", phone: "0935-345-678", status: "常態待命中" }
-    ],
-    drive: [
-      { name: "吳榮貴", skill: "物資運送卡車駕駛", license: "職業聯結車駕照", phone: "0958-456-789", status: "常態待命中" }
-    ]
-  },
-  "士林區": {
-    med: [{ name: "蘇雅筑", skill: "急救檢傷", license: "EMT-1 初級救護技術員", phone: "0960-567-890", status: "常態待命中" }],
-    elec: [{ name: "蔡宗憲", skill: "線路搶修", license: "室內配線乙級", phone: "0971-678-901", status: "常態待命中" }],
-    mach: [{ name: "梁志勇", skill: "鏈鋸泥沙清洗操作", license: "機械設備維修證", phone: "0982-789-012", status: "常態待命中" }],
-    drive: [{ name: "楊正發", skill: "越野涉水駕駛", license: "職業普通駕照", phone: "0919-890-123", status: "常態待命中" }]
-  },
-  "北投區": {
-    med: [{ name: "洪惠芬", skill: "CPR與包紮", license: "急救員證書", phone: "0928-901-234", status: "常態待命中" }],
-    elec: [{ name: "沈家豪", skill: "防水工程電纜維護", license: "工業配線技術士", phone: "0939-012-345", status: "常態待命中" }],
-    mach: [{ name: "邱俊明", skill: "抽水排砂機操控", license: "重型機具操作員", phone: "0950-123-456", status: "常態待命中" }],
-    drive: [{ name: "賴文彬", skill: "四驅卡車運補", license: "職業大貨車駕照", phone: "0961-234-567", status: "常態待命中" }]
-  }
-};
+let allDatabaseVolunteers = [];
+let mergedVolunteerBoardItems = [];
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadVolunteersFromDatabase();
   renderRegionVolunteers("中山區");
-  loadAdminVolunteers();
+  loadCombinedVolunteerAndDisasterBoard();
 
   document.getElementById("form-create-task")?.addEventListener("submit", async function(e) {
     e.preventDefault();
@@ -315,17 +296,68 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     this.reset();
     bootstrap.Modal.getInstance(document.getElementById("modalCreateTask")).hide();
-    loadAdminVolunteers();
+    loadCombinedVolunteerAndDisasterBoard();
   });
 });
 
-function renderRegionVolunteers(region) {
-  const data = REGION_VOLUNTEERS[region] || REGION_VOLUNTEERS["中山區"];
+// 完全從 Neon volunteers 資料表讀取所有志工名單
+async function loadVolunteersFromDatabase() {
+  try {
+    const res = await fetch("/api/registered-volunteers");
+    const json = await res.json();
+    if (json.status === "success") {
+      allDatabaseVolunteers = json.data || [];
+    }
+  } catch (e) {}
+}
 
-  renderGroupTable("tbody-group-med", "badge-med-count", data.med || [], "text-danger");
-  renderGroupTable("tbody-group-elec", "badge-elec-count", data.elec || [], "text-warning");
-  renderGroupTable("tbody-group-mach", "badge-mach-count", data.mach || [], "text-primary");
-  renderGroupTable("tbody-group-drive", "badge-drive-count", data.drive || [], "text-success");
+function renderRegionVolunteers(region) {
+  const medList = [];
+  const elecList = [];
+  const machList = [];
+  const driveList = [];
+
+  allDatabaseVolunteers.forEach(u => {
+    const uDist = (u.district || "中山區").trim();
+    if (uDist.includes(region) || region.includes(uDist)) {
+      const skills = u.volunteer_skills || "";
+      const cleanStatus = (u.status || "待命中").includes("待命") ? "待命中" : u.status;
+
+      const userObj = {
+        name: u.name,
+        skill: skills || "社區防汛巡檢與後勤支援",
+        license: u.license_info || "註冊互助志工",
+        phone: u.phone || "0912-000-000",
+        status: cleanStatus
+      };
+
+      let matched = false;
+      if (skills.includes("醫療") || skills.includes("急救")) {
+        medList.push(userObj);
+        matched = true;
+      }
+      if (skills.includes("水電")) {
+        elecList.push(userObj);
+        matched = true;
+      }
+      if (skills.includes("機具") || skills.includes("抽水")) {
+        machList.push(userObj);
+        matched = true;
+      }
+      if (skills.includes("車輛") || skills.includes("駕駛") || skills.includes("物資")) {
+        driveList.push(userObj);
+        matched = true;
+      }
+      if (!matched) {
+        driveList.push(userObj);
+      }
+    }
+  });
+
+  renderGroupTable("tbody-group-med", "badge-med-count", medList, "text-danger");
+  renderGroupTable("tbody-group-elec", "badge-elec-count", elecList, "text-warning");
+  renderGroupTable("tbody-group-mach", "badge-mach-count", machList, "text-primary");
+  renderGroupTable("tbody-group-drive", "badge-drive-count", driveList, "text-success");
 }
 
 function renderGroupTable(tbodyId, badgeId, list, colorClass) {
@@ -337,18 +369,19 @@ function renderGroupTable(tbodyId, badgeId, list, colorClass) {
   tbody.innerHTML = "";
 
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-2">該分區此組別目前尚無志工登錄。</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">該行政區此組別目前尚無志工登錄。</td></tr>`;
     return;
   }
 
   list.forEach(v => {
+    // 全部統一白底灰字細邊框徽章樣式，不區分顏色
     tbody.innerHTML += `
       <tr>
-        <td class="fw-bold text-dark" style="white-space: nowrap;">${v.name}</td>
-        <td>${v.skill}</td>
-        <td><span class="badge bg-light text-dark border"><i class="bi bi-patch-check-fill ${colorClass} me-1"></i>${v.license}</span></td>
-        <td class="font-monospace text-secondary" style="white-space: nowrap;">${v.phone}</td>
-        <td style="white-space: nowrap; text-align: center;">
+        <td data-label="志工姓名" class="fw-bold text-dark" style="white-space: nowrap;">${v.name}</td>
+        <td data-label="專長技能">${v.skill}</td>
+        <td data-label="證照/來源"><span class="badge bg-light text-dark border text-wrap text-start"><i class="bi bi-patch-check-fill ${colorClass} me-1"></i>${v.license}</span></td>
+        <td data-label="聯絡電話" class="font-monospace text-secondary" style="white-space: nowrap;">${v.phone}</td>
+        <td data-label="服務狀態" style="white-space: nowrap; text-align: center;">
           <span class="badge ${v.status.includes('出勤') ? 'bg-warning text-dark' : 'bg-success'}">${v.status}</span>
         </td>
       </tr>
@@ -356,35 +389,159 @@ function renderGroupTable(tbodyId, badgeId, list, colorClass) {
   });
 }
 
-async function loadAdminVolunteers() {
-  const tbody = document.getElementById("admin-volunteers-tbody");
-  if (!tbody) return;
+async function loadCombinedVolunteerAndDisasterBoard() {
+  const container = document.getElementById("adminVolunteersAccordion");
+  if (!container) return;
+
   try {
-    const res = await fetch("/api/volunteer-tasks");
-    const json = await res.json();
-    if (json.status === "success" && json.data) {
-      tbody.innerHTML = "";
-      if (json.data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">目前無志工出勤任務。</td></tr>`;
-        return;
-      }
-      json.data.forEach(v => {
-        tbody.innerHTML += `
-          <tr>
-            <td style="white-space: nowrap;"><strong class="text-dark">#${v.task_id}</strong></td>
-            <td style="white-space: nowrap;"><span class="badge bg-danger">${v.report_id || '管理端排班'}</span></td>
-            <td><strong>${v.title}</strong></td>
-            <td>${v.district} ${v.location}</td>
-            <td style="white-space: nowrap; text-align: center;"><span class="badge ${v.status.includes('已完成') ? 'bg-success' : 'bg-warning text-dark'}">${v.status}</span></td>
-            <td style="white-space: nowrap; text-align: center;">+${v.reward_points} 點</td>
-            <td style="white-space: nowrap; text-align: center;">
-              <span class="small text-muted">${v.assigned_user || '招募中'}</span>
-            </td>
-          </tr>
-        `;
+    const [resTasks, resReports] = await Promise.all([
+      fetch("/api/volunteer-tasks"),
+      fetch("/api/disaster-report?scope=all")
+    ]);
+    const jsonTasks = await resTasks.json();
+    const jsonReports = await resReports.json();
+
+    const tasks = jsonTasks.data || [];
+    const reports = jsonReports.data || [];
+
+    const combined = [];
+    const linkedReportNos = new Set();
+
+    tasks.forEach(t => {
+      if (t.report_id) linkedReportNos.add(t.report_id);
+      let category = "待派案";
+      if (t.status.includes("執行中") || t.status.includes("派員")) category = "出勤中";
+      else if (t.status.includes("已完成")) category = "已完成";
+
+      const cleanTitle = (t.title || "").replace(/【災情連動】/g, "").trim();
+
+      combined.push({
+        code: `TASK-#${t.task_id}`,
+        report_no: t.report_id || "管理端排班",
+        title: cleanTitle,
+        district: t.district || "中山區",
+        location: t.location || "",
+        description: t.description || "依派案執行現場防汛支援作業",
+        status: t.status,
+        status_cat: category,
+        assigned_user: t.assigned_user || "招募待接案",
+        reward_points: t.reward_points || 20,
+        time_str: t.time_str || "剛剛"
       });
-    }
-  } catch(e) {}
+    });
+
+    reports.forEach(r => {
+      if (linkedReportNos.has(r.report_no)) return;
+      let category = "待派案";
+      let statusLabel = r.status || "通報受理 (待排班)";
+      if (r.status === "派員現場") {
+        category = "出勤中";
+        statusLabel = "派員現場執行中";
+      } else if (r.status === "已結案") {
+        category = "已完成";
+        statusLabel = "已結案完成";
+      }
+
+      combined.push({
+        code: `#${r.report_no}`,
+        report_no: r.report_no,
+        title: `${r.district} ${r.location_description || '現場支援'}`,
+        district: r.district || "中山區",
+        location: r.location_description || "",
+        description: r.description || "",
+        status: statusLabel,
+        status_cat: category,
+        assigned_user: r.assigned_volunteer || "尚未指派志工",
+        reward_points: 20,
+        time_str: r.reported_at_str || "剛剛"
+      });
+    });
+
+    mergedVolunteerBoardItems = combined;
+    filterAndRenderVolunteerBoard();
+  } catch (e) {
+    container.innerHTML = `<div class="text-center text-danger py-3 small">讀取資料失敗</div>`;
+  }
+}
+
+function filterAndRenderVolunteerBoard() {
+  const container = document.getElementById("adminVolunteersAccordion");
+  if (!container) return;
+
+  const kw = (document.getElementById("vol-board-keyword")?.value || "").trim().toLowerCase();
+  const distFilter = document.getElementById("vol-board-district")?.value || "ALL";
+  const statusFilter = document.getElementById("vol-board-status")?.value || "ALL";
+  const sortMode = document.getElementById("vol-board-sort")?.value || "desc";
+
+  let list = [...mergedVolunteerBoardItems];
+
+  if (distFilter !== "ALL") {
+    list = list.filter(item => (item.district || "").includes(distFilter));
+  }
+  if (statusFilter !== "ALL") {
+    list = list.filter(item => item.status_cat === statusFilter);
+  }
+  if (kw) {
+    list = list.filter(item =>
+      (item.code || "").toLowerCase().includes(kw) ||
+      (item.report_no || "").toLowerCase().includes(kw) ||
+      (item.title || "").toLowerCase().includes(kw) ||
+      (item.location || "").toLowerCase().includes(kw) ||
+      (item.assigned_user || "").toLowerCase().includes(kw)
+    );
+  }
+
+  list.sort((a, b) => {
+    const tA = new Date(a.time_str).getTime() || 0;
+    const tB = new Date(b.time_str).getTime() || 0;
+    return sortMode === "asc" ? (tA - tB) : (tB - tA);
+  });
+
+  container.innerHTML = "";
+  if (list.length === 0) {
+    container.innerHTML = `<div class="text-center text-muted py-4 small">無符合條件的出勤或災情任務。</div>`;
+    return;
+  }
+
+  list.forEach((v, idx) => {
+    const collapseId = `volBoardCollapse_${idx}`;
+    let badgeClass = "bg-warning text-dark";
+    if (v.status_cat === "已完成") badgeClass = "bg-success";
+    else if (v.status_cat === "出勤中") badgeClass = "bg-primary";
+
+    container.innerHTML += `
+      <div class="accordion-item mb-2 border rounded shadow-sm">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-2 gap-1">
+              <div class="text-truncate" style="max-width: 72%;">
+                <span class="badge ${badgeClass} me-1">${v.status}</span>
+                <span class="badge bg-light text-dark border me-1">${v.district}</span>
+                <strong class="text-dark">${v.title}</strong>
+              </div>
+              <small class="text-muted font-monospace">${v.time_str}</small>
+            </div>
+          </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#adminVolunteersAccordion">
+          <div class="accordion-body bg-light">
+            <div class="p-3 bg-white rounded border small">
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-6"><strong>任務 / 案件編號：</strong><code class="text-danger">${v.code}</code> (連動：${v.report_no})</div>
+                <div class="col-12 col-md-6"><strong>承辦 / 指派志工：</strong><span class="text-primary fw-bold">${v.assigned_user}</span></div>
+                <div class="col-12 col-md-6"><strong>支援地點：</strong>${v.district} ${v.location}</div>
+                <div class="col-12 col-md-6"><strong>任務獎勵：</strong><span class="badge bg-warning text-dark">+${v.reward_points} 點</span></div>
+              </div>
+              <div class="pt-2 border-top">
+                <strong>任務與現場詳細說明：</strong>
+                <p class="mb-0 mt-1 text-secondary" style="white-space: pre-line;">${v.description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
 }
 </script>
 {% endblock %}

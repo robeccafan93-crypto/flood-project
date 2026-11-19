@@ -212,7 +212,6 @@ body {
   padding: 0.65rem 0.9rem;
 }
 
-/* 表格響應式捲動最佳化 */
 .table-responsive {
   -webkit-overflow-scrolling: touch;
 }
@@ -393,7 +392,7 @@ body {
   }
 
   .pro-card {
-    padding: 1.15rem !important;
+    padding: 1.1rem !important;
   }
 
   /* 手機版進度條縮小間距避免破版 */
@@ -432,5 +431,76 @@ body {
 
   #evacuation-map {
     height: 320px !important;
+  }
+
+  /* ================= 手機版表格自動轉為直立堆疊卡片 (杜絕垂直斷字與按鈕截斷) ================= */
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  .mobile-card-table,
+  .mobile-card-table tbody,
+  .mobile-card-table tr,
+  .mobile-card-table td {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .mobile-card-table tr {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .mobile-card-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-align: right !important;
+    padding: 0.45rem 0 !important;
+    border-bottom: 1px dashed #e2e8f0;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    gap: 12px;
+  }
+
+  .mobile-card-table td:last-child {
+    border-bottom: none;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.1rem !important;
+    justify-content: flex-end;
+  }
+
+  .mobile-card-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    text-align: left;
+    min-width: 78px;
+  }
+
+  /* 針對長文字描述欄位在手機上改為上下結構（標題在上方、描述佔滿全寬） */
+  .mobile-card-table td.mobile-block-field {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left !important;
+    gap: 4px;
+  }
+
+  .mobile-card-table td.mobile-block-field::before {
+    margin-bottom: 2px;
+  }
+
+  .mobile-card-table td .form-select,
+  .mobile-card-table td .btn {
+    max-width: 100%;
   }
 }

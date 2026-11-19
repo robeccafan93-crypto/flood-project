@@ -8,8 +8,10 @@ let selectedImageBase64 = "";
 let tickerInterval = null;
 let selectedDisasterTypes = [];
 
+// 當前驗證通過的災區座標
 let verifiedZoneCoords = null;
 
+// 紅(嚴重)與橘(偏高)災害警戒區（與預警避難地圖完全同步）
 const RED_ORANGE_ZONES = [
   { name: "北投低窪警戒區", district: "北投區", level: "red", label: "嚴重 (紅色警戒區)", lat: 25.1325, lon: 121.4988, radiusKm: 2.5 },
   { name: "大同延平北路段", district: "大同區", level: "orange", label: "偏高 (橘色警戒區)", lat: 25.0655, lon: 121.5145, radiusKm: 2.2 },
@@ -35,6 +37,7 @@ function findMatchedRedOrangeZone(lat, lon) {
   return null;
 }
 
+// 核驗是否處於紅色(嚴重)或橘色(偏高)災害發生區域
 function verifyDemandZoneEligibility() {
   const banner = document.getElementById("zone-eligibility-banner");
   const submitBtn = document.getElementById("btn-submit-supply");
@@ -108,6 +111,7 @@ function applyZoneVerification(lat, lon) {
   }
 }
 
+// 資源主類型、子分類與具體品項規格字典
 const resourceDictionary = {
   "物": {
     "防汛阻水類": [
@@ -169,6 +173,7 @@ const resourceDictionary = {
 
 let pendingRequestItems = [];
 
+// 柔和淺色標籤配色
 const DISASTER_TAG_STYLES = {
   "路樹災情": "background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;",
   "廣告招牌災情": "background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;",
@@ -189,14 +194,22 @@ document.addEventListener("DOMContentLoaded", () => {
   loadBoardMessages();
   updateVolunteerUI();
 
+  // 需求申請歷史紀錄篩選
   document.getElementById("supply-search-keyword")?.addEventListener("input", filterAndRenderSupplyHistory);
   document.getElementById("supply-filter-type")?.addEventListener("change", filterAndRenderSupplyHistory);
   document.getElementById("supply-sort-time")?.addEventListener("change", filterAndRenderSupplyHistory);
 
+  // 災情追蹤篩選
   document.getElementById("disaster-search-keyword")?.addEventListener("input", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-filter-status")?.addEventListener("change", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-sort-time")?.addEventListener("change", filterAndRenderDisasterAccordion);
 
+  // 留言板篩選
+  document.getElementById("board-search-input")?.addEventListener("input", renderBoardList);
+  document.getElementById("board-filter-select")?.addEventListener("change", renderBoardList);
+  document.getElementById("board-sort-select")?.addEventListener("change", renderBoardList);
+
+  // 照片預覽與壓縮
   const fileInput = document.getElementById("report-img-file");
   if (fileInput) {
     fileInput.addEventListener("change", function(e) {
@@ -232,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 留言板送出
   const btnSubmitMsg = document.getElementById("btn-submit-message");
   if (btnSubmitMsg) {
     btnSubmitMsg.addEventListener("click", async () => {
@@ -324,13 +338,13 @@ function renderRequestTable() {
     let badgeClass = it.resource_type === "人" ? "bg-success" : (it.resource_type === "機" ? "bg-warning text-dark" : "bg-primary");
     tbody.innerHTML += `
       <tr>
-        <td style="white-space: nowrap;"><span class="badge ${badgeClass}">${it.resource_type}</span></td>
-        <td><strong>${it.item_name}</strong> <small class="text-muted">(${it.sub_category})</small></td>
-        <td style="white-space: nowrap;">
+        <td data-label="類型" style="white-space: nowrap;"><span class="badge ${badgeClass}">${it.resource_type}</span></td>
+        <td data-label="品項名稱"><strong>${it.item_name}</strong> <small class="text-muted">(${it.sub_category})</small></td>
+        <td data-label="申請數量" style="white-space: nowrap;">
           <input type="number" class="form-control form-control-sm text-center" style="width: 80px;" value="${it.quantity}" min="1" onchange="pendingRequestItems[${idx}].quantity = parseInt(this.value);">
         </td>
-        <td style="white-space: nowrap;">${it.unit}</td>
-        <td style="text-align: center; white-space: nowrap;">
+        <td data-label="單位" style="white-space: nowrap;">${it.unit}</td>
+        <td data-label="操作" style="text-align: center; white-space: nowrap;">
           <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removeItemFromList(${idx})">移除</button>
         </td>
       </tr>
@@ -412,6 +426,7 @@ async function executeRealSupplySubmit() {
   } catch (e) {}
 }
 
+// 多選災害種類標籤
 function addDisasterTypeTag(typeVal) {
   if (!typeVal) return;
   if (!selectedDisasterTypes.includes(typeVal)) {
@@ -564,6 +579,7 @@ function removeSelectedImage() {
   if (box) box.classList.add("d-none");
 }
 
+// 需求申請歷史紀錄（專屬登入帳號）
 async function loadSupplyHistory() {
   const tbody = document.getElementById("supply-history-tbody");
   if (!tbody) return;
@@ -643,20 +659,20 @@ function filterAndRenderSupplyHistory() {
 
     tbody.innerHTML += `
       <tr>
-        <td style="white-space: nowrap;"><span class="badge bg-light text-primary border font-monospace">${row.order_no}</span></td>
-        <td style="white-space: nowrap;" class="small font-monospace text-secondary">${row.created_at || '剛剛'}</td>
-        <td style="white-space: nowrap; text-align: center;">${badgesHtml}</td>
-        <td style="max-width: 250px;" class="text-truncate" title="${cleanItemName}">
+        <td data-label="訂單編號" style="white-space: nowrap;"><span class="badge bg-light text-primary border font-monospace">${row.order_no}</span></td>
+        <td data-label="申請時間" style="white-space: nowrap;" class="small font-monospace text-secondary">${row.created_at || '剛剛'}</td>
+        <td data-label="資源類型" style="white-space: nowrap; text-align: center;">${badgesHtml}</td>
+        <td data-label="品項與數量" class="mobile-block-field" style="max-width: 250px;" title="${cleanItemName}">
           <strong>${shortItemName}</strong>
         </td>
-        <td class="small text-secondary text-truncate" style="max-width: 140px;" title="${row.detail_address || '未提供地址'}">
+        <td data-label="詳細地址" class="small text-secondary">
           ${row.detail_address || "未提供地址"}
         </td>
-        <td style="white-space: nowrap; text-align: center;">
+        <td data-label="當前狀態" style="white-space: nowrap; text-align: center;">
           <span class="badge bg-warning text-dark px-2 py-1">${displayStatus}</span>
         </td>
-        <td style="white-space: nowrap; text-align: center;">
-          <button class="btn btn-sm btn-outline-primary px-3" onclick="openOrderDetailModal('${row.order_no}')">
+        <td data-label="詳細資訊" style="white-space: nowrap; text-align: center;">
+          <button class="btn btn-sm btn-outline-primary px-3 w-100 w-md-auto" onclick="openOrderDetailModal('${row.order_no}')">
             查看
           </button>
         </td>
@@ -734,6 +750,7 @@ function openOrderDetailModal(orderNo) {
   new bootstrap.Modal(document.getElementById("orderProgressModal")).show();
 }
 
+// 災情通報即時看跑馬燈（一次呈現 2 筆全體通報）
 async function loadDisasterLiveTicker() {
   const summaryEl = document.getElementById("ticker-summary-text");
   const trackEl = document.getElementById("tickerTrack");
@@ -777,6 +794,7 @@ async function loadDisasterLiveTicker() {
   } catch(e) {}
 }
 
+// 通報處理進度追蹤（專屬登入帳號）
 async function loadDisasterAccordion() {
   const container = document.getElementById("disasterAccordion");
   if (!container) return;
@@ -850,7 +868,7 @@ function filterAndRenderDisasterAccordion() {
     let confirmActionHtml = "";
     if (r.status === "派員現場") {
       confirmActionHtml = `
-        <div class="alert alert-info py-2 px-3 mt-3 d-flex justify-content-between align-items-center">
+        <div class="alert alert-info py-2 px-3 mt-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span class="small"><i class="bi bi-person-check-fill text-primary me-1"></i>志工已派駐現場搶修中！現場狀況若已排除，請予以驗收：</span>
           <button class="btn btn-success btn-sm fw-bold px-3" onclick="confirmDisasterTaskResolved('${r.report_no}')">
             <i class="bi bi-award me-1"></i>確認任務完成
@@ -863,14 +881,12 @@ function filterAndRenderDisasterAccordion() {
       <div class="accordion-item mb-2 border rounded shadow-sm">
         <h2 class="accordion-header">
           <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
-            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-2 gap-1">
               <div>
                 <span class="badge ${badgeClass} me-2" style="white-space: nowrap;">${r.status || '通報受理'}</span>
-                <strong class="text-dark">案件編號 #${r.report_no} (${r.district} - ${r.location_description || '市區'})</strong>
+                <strong class="text-dark">#${r.report_no} (${r.district} - ${r.location_description || '市區'})</strong>
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <small class="text-muted font-monospace" style="white-space: nowrap;">${r.reported_at_str}</small>
-              </div>
+              <small class="text-muted font-monospace">${r.reported_at_str}</small>
             </div>
           </button>
         </h2>
@@ -965,47 +981,80 @@ async function confirmDisasterTaskResolved(reportNo) {
   loadVolunteerTasks();
 }
 
+// 民眾端志工任務：點擊展開詳細資訊與接案操作
 async function loadVolunteerTasks() {
-  const tbody = document.getElementById("volunteer-tasks-tbody");
-  if (!tbody) return;
+  const container = document.getElementById("volunteerTasksAccordion");
+  if (!container) return;
 
   try {
     const res = await fetch("/api/volunteer-tasks");
     const json = await res.json();
     if (json.status === "success" && json.data) {
-      tbody.innerHTML = "";
+      container.innerHTML = "";
       if (json.data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">目前無待出勤任務。</td></tr>`;
+        container.innerHTML = `<div class="text-center text-muted py-3 small">目前無待出勤任務。</div>`;
         return;
       }
-      json.data.forEach(t => {
-        let btnStatus = `<button class="btn btn-sm btn-primary px-3" onclick="claimTaskPending(this, ${t.task_id})">接案出勤</button>`;
+
+      json.data.forEach((t, idx) => {
+        const collapseId = `collapseVolTask_${t.task_id}_${idx}`;
+        let statusBadge = `<span class="badge bg-danger">緊急出勤</span>`;
+        let btnStatus = `<button class="btn btn-sm btn-primary px-4 fw-bold" onclick="claimTaskPending(this, ${t.task_id})"><i class="bi bi-hand-index-thumb me-1"></i>接案出勤</button>`;
+
         if (t.status.includes("執行中")) {
-          btnStatus = `<button class="btn btn-sm btn-warning text-dark disabled">出勤中 (待驗收)</button>`;
+          statusBadge = `<span class="badge bg-warning text-dark">執行中</span>`;
+          btnStatus = `<button class="btn btn-sm btn-warning text-dark disabled px-3">出勤中 (待驗收)</button>`;
         } else if (t.status.includes("已完成")) {
-          btnStatus = `<button class="btn btn-sm btn-success disabled">已結案核發</button>`;
+          statusBadge = `<span class="badge bg-success">已完成</span>`;
+          btnStatus = `<button class="btn btn-sm btn-success disabled px-3">已結案核發</button>`;
         }
 
-        tbody.innerHTML += `
-          <tr>
-            <td style="white-space: nowrap;" class="small font-monospace">${t.time_str || '剛剛'}</td>
-            <td>
-              <strong class="text-dark">${t.title}</strong><br>
-              <small class="text-muted">連動案件：${t.report_id || '社區通報'}</small>
-            </td>
-            <td style="white-space: nowrap;"><span class="badge bg-danger">緊急出勤</span></td>
-            <td>${t.district} ${t.location}</td>
-            <td style="white-space: nowrap;">
-              <span class="badge bg-success">+50 EXP</span>
-              <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> +${t.reward_points}</span>
-            </td>
-            <td style="white-space: nowrap; text-align: center;">${btnStatus}</td>
-          </tr>
+        container.innerHTML += `
+          <div class="accordion-item mb-2 border rounded shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-2 gap-1">
+                  <div class="text-truncate" style="max-width: 75%;">
+                    ${statusBadge}
+                    <strong class="text-dark ms-1">${t.title}</strong>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> +${t.reward_points}</span>
+                    <small class="text-muted font-monospace d-none d-sm-inline">${t.time_str || '剛剛'}</small>
+                  </div>
+                </div>
+              </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#volunteerTasksAccordion">
+              <div class="accordion-body bg-light">
+                <div class="row g-2 small mb-3">
+                  <div class="col-12 col-md-6">
+                    <span class="text-muted">發布時間：</span><strong class="font-monospace text-dark">${t.time_str || '剛剛'}</strong>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <span class="text-muted">連動案件：</span><span class="badge bg-secondary">${t.report_id || '社區通報'}</span>
+                  </div>
+                  <div class="col-12">
+                    <span class="text-muted">支援地點：</span><strong class="text-dark">${t.district} ${t.location}</strong>
+                  </div>
+                  <div class="col-12">
+                    <span class="text-muted">任務獎勵：</span>
+                    <span class="badge bg-success me-1">+50 EXP</span>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> +${t.reward_points} 點數</span>
+                  </div>
+                  ${t.description ? `<div class="col-12 pt-2 border-top"><span class="text-muted d-block mb-1">詳細說明：</span><p class="mb-0 text-secondary">${t.description}</p></div>` : ''}
+                </div>
+                <div class="pt-2 border-top d-flex justify-content-end">
+                  ${btnStatus}
+                </div>
+              </div>
+            </div>
+          </div>
         `;
       });
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">載入出勤任務失敗</td></tr>`;
+    container.innerHTML = `<div class="text-center text-danger py-3 small">載入出勤任務失敗</div>`;
   }
 }
 
@@ -1018,24 +1067,55 @@ async function claimTaskPending(btn, taskId) {
   loadVolunteerTasks();
 }
 
+// 留言板載入與篩選
 async function loadBoardMessages() {
   const container = document.getElementById("board-message-list");
   if (!container) return;
 
-  const res = await fetch("/api/messages");
-  const json = await res.json();
-  if (json.status === "success" && json.data) {
-    cachedMessages = json.data;
-    renderBoardList();
-  }
+  try {
+    const res = await fetch("/api/messages");
+    const json = await res.json();
+    if (json.status === "success" && json.data) {
+      cachedMessages = json.data;
+      renderBoardList();
+    }
+  } catch (e) {}
 }
 
 function renderBoardList() {
   const container = document.getElementById("board-message-list");
   if (!container) return;
 
+  const kw = (document.getElementById("board-search-input")?.value || "").trim().toLowerCase();
+  const filterCat = document.getElementById("board-filter-select")?.value || "全部類別";
+  const sortMode = document.getElementById("board-sort-select")?.value || "desc";
+
+  let list = [...cachedMessages];
+
+  if (filterCat !== "全部類別") {
+    list = list.filter(m => m.category === filterCat);
+  }
+  if (kw) {
+    list = list.filter(m =>
+      (m.content || "").toLowerCase().includes(kw) ||
+      (m.tags || "").toLowerCase().includes(kw) ||
+      (m.user_name || "").toLowerCase().includes(kw)
+    );
+  }
+
+  list.sort((a, b) => {
+    const tA = new Date(a.time_str).getTime() || 0;
+    const tB = new Date(b.time_str).getTime() || 0;
+    return sortMode === "asc" ? (tA - tB) : (tB - tA);
+  });
+
   container.innerHTML = "";
-  cachedMessages.forEach(m => {
+  if (list.length === 0) {
+    container.innerHTML = `<div class="text-center py-4 text-muted small">無符合條件之留言紀錄。</div>`;
+    return;
+  }
+
+  list.forEach(m => {
     container.innerHTML += `
       <div class="list-group-item py-3 px-0 border-0 border-bottom">
         <div class="d-flex justify-content-between align-items-center mb-1">

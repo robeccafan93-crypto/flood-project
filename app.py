@@ -33,14 +33,12 @@ def generate_custom_order_no(cur, prefix="REQ"):
     seq_num = (result["count"] if result else 0) + 1
     return f"{prefix}-{today_str}-{seq_num:03d}"
 
-# 紅(嚴重)與橘(偏高)災害警戒區座標與半徑(公尺)，與預警避難地圖完全同步
 RED_ORANGE_ZONES = [
     {"name": "北投低窪警戒區", "district": "北投區", "level": "red", "level_text": "嚴重 (紅區)", "lat": 25.1325, "lon": 121.4988, "radius_km": 2.5},
     {"name": "大同延平北路段", "district": "大同區", "level": "orange", "level_text": "偏高 (橘區)", "lat": 25.0655, "lon": 121.5145, "radius_km": 2.2},
     {"name": "中山低窪警戒區", "district": "中山區", "level": "orange", "level_text": "偏高 (橘區)", "lat": 25.0685, "lon": 121.5325, "radius_km": 2.0}
 ]
 
-# 11個行政區備災中心經緯度（供跨區調度距離計算）
 DISTRICT_COORDS = {
     "北投區": (25.1325, 121.4988),
     "士林區": (25.0920, 121.5260),
@@ -103,6 +101,7 @@ def auth():
                     session["phone"] = "0912-345-678"
                     session["role"] = "community"
                     session["district"] = "大同區"
+                    session["volunteer_skills"] = ""
                     flash("管理員登入成功！", "success")
                     return redirect(url_for("citizen_disaster"))
 
@@ -121,12 +120,16 @@ def auth():
                     flash("密碼錯誤，請重新輸入！", "danger")
                     return redirect(url_for("auth"))
 
+                cur.execute("SELECT skills FROM volunteers WHERE user_id = %s", (user["user_id"],))
+                vol_row = cur.fetchone()
+
                 session["user_id"] = user["user_id"]
                 session["username"] = user["username"]
                 session["name"] = user.get("name") or user["username"]
                 session["phone"] = user.get("phone") or "0912-345-678"
                 session["role"] = "community" if str(user.get("role", "")).lower() in ["community", "社區", "admin"] else "citizen"
                 session["district"] = user.get("region_code") or "中山區"
+                session["volunteer_skills"] = vol_row["skills"] if vol_row else ""
 
                 flash(f"歡迎登入，{session['name']}！", "success")
                 return redirect(url_for("citizen_disaster"))
@@ -137,15 +140,37 @@ def auth():
                 email = request.form.get("email", "").strip()
                 role = "community" if request.form.get("role") == "社區" else "citizen"
                 district = request.form.get("district", "中山區")
+                is_vol = request.form.get("is_volunteer") == "yes"
+                skills_list = request.form.getlist("skills")
+                skills_str = ",".join(skills_list)
 
                 try:
                     cur.execute(
                         """
                         INSERT INTO users (username, password_hash, name, phone, email, role, region_code)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        RETURNING user_id
                         """,
                         (account, password, name, phone, email, role, district)
                     )
+                    new_user = cur.fetchone()
+
+                    if is_vol and new_user:
+                        cur.execute(
+                            """
+                            INSERT INTO volunteers (user_id, username, name, phone, district, skills, license_info, status, created_at, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, '註冊互助志工', '待命中', NOW(), NOW())
+                            ON CONFLICT (user_id) DO UPDATE SET
+                                name = EXCLUDED.name,
+                                phone = EXCLUDED.phone,
+                                district = EXCLUDED.district,
+                                skills = EXCLUDED.skills,
+                                status = '待命中',
+                                updated_at = NOW()
+                            """,
+                            (new_user["user_id"], account, name, phone, district, skills_str)
+                        )
+
                     conn.commit()
                     flash("註冊成功！請直接登入。", "success")
                 except psycopg2.IntegrityError:
@@ -267,7 +292,6 @@ def api_flood_summary():
         if cur: cur.close()
         if conn: conn.close()
 
-# 災情通報 API
 @app.route("/api/disaster-report", methods=["GET", "POST"])
 def api_disaster_report():
     conn = None
@@ -335,31 +359,35 @@ def api_disaster_report():
             if scope == "all":
                 cur.execute("""
                     SELECT report_id, 
-                           COALESCE(report_no, 'RPT-20260915-01') as report_no,
+                           COALESCE(report_no, 'RPT-' || report_id::text) as report_no,
                            COALESCE(user_name, '市民') as user_name,
-                           COALESCE(district, region_code, '中山區') as district,
+                           COALESCE(NULLIF(district, ''), NULLIF(region_code, ''), '中山區') as district,
                            COALESCE(location_description, '') as location_description,
+                           COALESCE(report_type, '一般通報') as report_type,
                            description, image_url,
                            COALESCE(status, '通報受理') as status,
                            COALESCE(urgency, '待評估') as urgency,
+                           COALESCE(assigned_volunteer, '') as assigned_volunteer,
                            TO_CHAR(COALESCE(reported_at, NOW()), 'YYYY-MM-DD HH24:MI') as reported_at_str
                     FROM disaster_reports
-                    ORDER BY report_id DESC LIMIT 50
+                    ORDER BY report_id DESC LIMIT 200
                 """)
             else:
                 cur.execute("""
                     SELECT report_id, 
-                           COALESCE(report_no, 'RPT-20260915-01') as report_no,
+                           COALESCE(report_no, 'RPT-' || report_id::text) as report_no,
                            COALESCE(user_name, '市民') as user_name,
-                           COALESCE(district, region_code, '中山區') as district,
+                           COALESCE(NULLIF(district, ''), NULLIF(region_code, ''), '中山區') as district,
                            COALESCE(location_description, '') as location_description,
+                           COALESCE(report_type, '一般通報') as report_type,
                            description, image_url,
                            COALESCE(status, '通報受理') as status,
                            COALESCE(urgency, '待評估') as urgency,
+                           COALESCE(assigned_volunteer, '') as assigned_volunteer,
                            TO_CHAR(COALESCE(reported_at, NOW()), 'YYYY-MM-DD HH24:MI') as reported_at_str
                     FROM disaster_reports
                     WHERE user_id = %s OR user_name = %s
-                    ORDER BY report_id DESC LIMIT 50
+                    ORDER BY report_id DESC LIMIT 100
                 """, (user_id, user_name))
             
             rows = cur.fetchall()
@@ -372,7 +400,6 @@ def api_disaster_report():
         if cur: cur.close()
         if conn: conn.close()
 
-# 災情審核與派案
 @app.route("/api/disaster-report/audit", methods=["POST"])
 def api_audit_disaster_report():
     conn = None
@@ -413,7 +440,35 @@ def api_audit_disaster_report():
         if cur: cur.close()
         if conn: conn.close()
 
-# 需求申請 API（嚴格驗證必須位於紅色嚴重或橘色偏高警戒區）
+# 從資料庫 volunteers 表讀取全部志工（包含預設編制志工與註冊志工）
+@app.route("/api/registered-volunteers", methods=["GET"])
+def api_registered_volunteers():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT volunteer_id, user_id, username, name,
+                   COALESCE(NULLIF(phone, ''), '0912-000-000') AS phone,
+                   COALESCE(NULLIF(district, ''), '中山區') AS district,
+                   COALESCE(skills, '') AS volunteer_skills,
+                   COALESCE(license_info, '註冊互助志工') AS license_info,
+                   CASE 
+                     WHEN status LIKE '%待命%' THEN '待命中'
+                     ELSE COALESCE(NULLIF(status, ''), '待命中')
+                   END AS status
+            FROM volunteers
+            ORDER BY volunteer_id ASC
+        """)
+        rows = cur.fetchall()
+        return jsonify({"status": "success", "data": rows})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
 @app.route("/api/supply-request", methods=["GET", "POST"])
 def api_supply_request():
     conn = None
@@ -512,7 +567,7 @@ def api_supply_request():
                            created_at
                     FROM supplies_requests
                     ORDER BY id DESC
-                    LIMIT 50
+                    LIMIT 100
                 """)
             else:
                 cur.execute("""
@@ -524,7 +579,7 @@ def api_supply_request():
                     FROM supplies_requests
                     WHERE user_account = %s OR user_name = %s
                     ORDER BY id DESC
-                    LIMIT 50
+                    LIMIT 100
                 """, (current_user, current_name))
 
             rows = cur.fetchall()
@@ -545,7 +600,6 @@ def api_supply_request():
         if cur: cur.close()
         if conn: conn.close()
 
-# 管理端審核物資申請並自動扣除 Neon supplies 資料表庫存
 @app.route("/api/supply-request/audit", methods=["POST"])
 def api_audit_supply_request():
     conn = None
@@ -594,7 +648,6 @@ def api_audit_supply_request():
         if cur: cur.close()
         if conn: conn.close()
 
-# 志工任務
 @app.route("/api/volunteer-tasks", methods=["GET", "POST"])
 def api_volunteer_tasks():
     conn = None
@@ -631,7 +684,6 @@ def api_volunteer_tasks():
         if cur: cur.close()
         if conn: conn.close()
 
-# 申請者驗收完成
 @app.route("/api/volunteer-tasks/confirm-complete", methods=["POST"])
 def api_confirm_volunteer_task():
     conn = None
@@ -693,7 +745,6 @@ def api_create_volunteer_task():
         if cur: cur.close()
         if conn: conn.close()
 
-# 物資庫存 API
 @app.route("/api/community-resources", methods=["GET", "POST", "DELETE"])
 def api_community_resources():
     conn = None
@@ -744,7 +795,6 @@ def api_community_resources():
         if cur: cur.close()
         if conn: conn.close()
 
-# 智慧跨區調度推薦計算 API (系統先依「庫存量多寡優先」+「社區距離最近」排序推薦，再供管理員選擇)
 @app.route("/api/supply-recommend", methods=["GET"])
 def api_supply_recommend():
     target_dist = request.args.get("target_district", "大同區").strip()
@@ -767,7 +817,6 @@ def api_supply_recommend():
         candidates = []
         for r in rows:
             loc = r.get("current_location") or ""
-            # 解析該庫存所屬行政區
             src_dist = None
             for d_name in DISTRICT_COORDS.keys():
                 if d_name in loc:
@@ -783,22 +832,15 @@ def api_supply_recommend():
             src_lat, src_lon = DISTRICT_COORDS[src_dist]
             dist_km = round(haversine_km(src_lat, src_lon, target_lat, target_lon), 2)
 
-            # 綜合推薦評分：庫存數量佔 65% 權重，距離越近佔 35% 權重
-            stock_score = min(qty / 5.0, 100.0)
-            dist_score = max(0.0, 100.0 - (dist_km * 8.0))
-            total_score = round((stock_score * 0.65) + (dist_score * 0.35), 1)
-
             candidates.append({
                 "district": src_dist,
                 "location": loc,
                 "item_name": r["item_name"],
                 "quantity": qty,
                 "unit": r.get("unit") or "個",
-                "distance_km": dist_km,
-                "score": total_score
+                "distance_km": dist_km
             })
 
-        # 排序規則：第一優先庫存數量多寡 (qty 降冪)，第二優先距離最近 (distance_km 升冪)
         candidates.sort(key=lambda x: (-x["quantity"], x["distance_km"]))
 
         return jsonify({
@@ -813,7 +855,6 @@ def api_supply_recommend():
         if cur: cur.close()
         if conn: conn.close()
 
-# 跨區物資調撥 API
 @app.route("/api/supply-transfer", methods=["POST"])
 def api_supply_transfer():
     conn = None
@@ -865,6 +906,11 @@ def api_update_user_profile():
     new_username = data.get("username", "").strip()
     new_password = data.get("password", "").strip()
     new_district = data.get("district", "中山區")
+    skills_list = data.get("skills", [])
+    skills_str = ",".join(skills_list)
+    user_id = session["user_id"]
+    phone = session.get("phone", "0912-345-678")
+
     conn = None
     cur = None
     try:
@@ -875,18 +921,35 @@ def api_update_user_profile():
                 UPDATE users 
                 SET name = %s, username = %s, password_hash = %s, region_code = %s
                 WHERE user_id = %s
-            """, (new_name, new_username, new_password, new_district, session["user_id"]))
+            """, (new_name, new_username, new_password, new_district, user_id))
         else:
             cur.execute("""
                 UPDATE users 
                 SET name = %s, username = %s, region_code = %s
                 WHERE user_id = %s
-            """, (new_name, new_username, new_district, session["user_id"]))
+            """, (new_name, new_username, new_district, user_id))
+
+        if len(skills_list) > 0:
+            cur.execute("""
+                INSERT INTO volunteers (user_id, username, name, phone, district, skills, license_info, status, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, '註冊互助志工', '待命中', NOW(), NOW())
+                ON CONFLICT (user_id) DO UPDATE SET
+                    username = EXCLUDED.username,
+                    name = EXCLUDED.name,
+                    district = EXCLUDED.district,
+                    skills = EXCLUDED.skills,
+                    status = '待命中',
+                    updated_at = NOW()
+            """, (user_id, new_username, new_name, phone, new_district, skills_str))
+        else:
+            cur.execute("DELETE FROM volunteers WHERE user_id = %s", (user_id,))
+
         conn.commit()
         session["name"] = new_name
         session["username"] = new_username
         session["district"] = new_district
-        return jsonify({"status": "success", "message": "會員資料已成功儲存！"})
+        session["volunteer_skills"] = skills_str
+        return jsonify({"status": "success", "message": "會員資料與志工設定已成功儲存！"})
     except Exception as e:
         if conn: conn.rollback()
         return jsonify({"status": "error", "message": f"更新失敗: {str(e)}"}), 500

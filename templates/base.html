@@ -12,7 +12,7 @@
 </head>
 <body>
 
-  <!-- 頂部導航列 (完整支援手機/平板 RWD 摺疊) -->
+  <!-- 頂部導航列 -->
   <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top py-2 px-3 px-lg-4 shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-2 me-4" href="{{ url_for('index') }}">
@@ -125,8 +125,9 @@
     </div>
   </div>
 
-  <!-- 個人資料彈窗 -->
+  <!-- 個人資料彈窗 (真實連動資料庫 volunteers 表格) -->
   {% if session.get('username') %}
+  {% set user_skills = session.get('volunteer_skills', '') %}
   <div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content pro-card border-0 shadow-lg">
@@ -169,25 +170,25 @@
               <div class="row g-2">
                 <div class="col-6">
                   <div class="form-check">
-                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="醫療急救" id="ps1" disabled checked>
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="醫療急救" id="ps1" disabled {% if '醫療' in user_skills %}checked{% endif %}>
                     <label class="form-check-label small" for="ps1">醫療急救 / 護理</label>
                   </div>
                 </div>
                 <div class="col-6">
                   <div class="form-check">
-                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="水電檢修" id="ps2" disabled checked>
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="水電檢修" id="ps2" disabled {% if '水電' in user_skills %}checked{% endif %}>
                     <label class="form-check-label small" for="ps2">水電維修 / 配管</label>
                   </div>
                 </div>
                 <div class="col-6">
                   <div class="form-check">
-                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="機具抽水操作" id="ps3" disabled>
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="機具抽水操作" id="ps3" disabled {% if '機具' in user_skills or '抽水' in user_skills %}checked{% endif %}>
                     <label class="form-check-label small" for="ps3">抽水泵浦機具操作</label>
                   </div>
                 </div>
                 <div class="col-6">
                   <div class="form-check">
-                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="物資車輛調配" id="ps4" disabled>
+                    <input class="form-check-input profile-field" type="checkbox" name="profile_skills" value="物資車輛調配" id="ps4" disabled {% if '車輛' in user_skills or '物資' in user_skills %}checked{% endif %}>
                     <label class="form-check-label small" for="ps4">車輛駕駛 / 物資調配</label>
                   </div>
                 </div>
@@ -216,11 +217,13 @@
 
     document.getElementById('form-update-profile')?.addEventListener('submit', async function(e) {
       e.preventDefault();
+      const checkedSkills = Array.from(document.querySelectorAll('input[name="profile_skills"]:checked')).map(cb => cb.value);
       const payload = {
         name: document.getElementById('profile-name').value,
         username: document.getElementById('profile-username').value,
         password: document.getElementById('profile-password').value,
-        district: document.getElementById('profile-district').value
+        district: document.getElementById('profile-district').value,
+        skills: checkedSkills
       };
       const res = await fetch('/api/user-profile/update', {
         method: 'POST',

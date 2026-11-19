@@ -3,38 +3,38 @@
 {% block content %}
 <div class="row">
   <!-- 管理端專屬側欄 -->
-  <div class="col-md-3 mb-4">
+  <div class="col-lg-3 mb-4">
     <div class="list-group sidebar-menu shadow-sm">
       <a href="{{ url_for('community_manage') }}" class="list-group-item list-group-item-action active"><i class="bi bi-clipboard2-check text-danger me-2"></i>案件處理</a>
       <a href="{{ url_for('community_demand') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam text-warning me-2"></i>物資庫存</a>
       <a href="{{ url_for('subsidy_resource') }}" class="list-group-item list-group-item-action"><i class="bi bi-people-fill text-success me-2"></i>志工管理</a>
     </div>
 
+    <!-- 案件處置原則 (依圖二精簡為兩點) -->
     <div class="pro-card p-3 mt-3 shadow-sm bg-white border">
       <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-primary me-1"></i>案件處置原則</h6>
       <ul class="list-unstyled small text-secondary mb-0">
         <li class="mb-1">🔹 <strong>災情通報：</strong>評定等級後即刻派遣志工</li>
-        <li class="mb-1">🔹 <strong>需求申請：</strong>核准後系統自動同步扣除庫存</li>
-        <li class="mb-0">🔹 <strong>時效控管：</strong>急迫案件優先在 15 分鐘內立案</li>
+        <li class="mb-0">🔹 <strong>需求申請：</strong>核准後系統自動同步扣除庫存</li>
       </ul>
     </div>
   </div>
 
   <!-- 主內容 -->
-  <div class="col-md-9">
+  <div class="col-lg-9">
     
     <!-- 頂部指針看板 -->
     <div class="row g-3 mb-4 text-center">
-      <div class="col-md-6">
+      <div class="col-6">
         <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">待處理災情案件</small>
-          <div class="fs-3 fw-bold text-danger my-1" id="top-pending-count">1 件</div>
-          <div class="small text-danger fw-semibold">待評定並派員現場</div>
+          <small class="text-muted fw-bold d-block mb-1">全區災情通報總數</small>
+          <div class="fs-3 fw-bold text-danger my-1" id="top-pending-count">0 件</div>
+          <div class="small text-danger fw-semibold" id="top-unhandled-sub">待處理：0 件</div>
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-6">
         <div class="p-3 bg-white rounded border shadow-sm h-100 d-flex flex-column justify-content-center">
-          <small class="text-muted fw-bold d-block mb-1">待審核需求申請 (物資/設備/人力)</small>
+          <small class="text-muted fw-bold d-block mb-1">待審核需求申請</small>
           <div class="fs-3 fw-bold text-primary my-1" id="pending-supply-count">0 筆</div>
           <div class="small text-primary fw-semibold">待核准調度出庫</div>
         </div>
@@ -57,62 +57,62 @@
 
     <div class="tab-content">
       
-      <!-- 標籤 1：災情通報審核 -->
+      <!-- 標籤 1：災情通報審核 (已刪除多余副標題文字) -->
       <div class="tab-pane fade show active" id="tab-disasters">
-        <div class="pro-card p-4 shadow-sm mb-4 bg-white border rounded">
-          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div class="pro-card p-3 p-md-4 shadow-sm mb-4 bg-white border rounded">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
               <i class="bi bi-check2-square text-danger fs-5"></i> 災情通報審核工作台
             </h5>
-            <span class="badge bg-danger px-3 py-2 fw-bold" id="badge-pending-count">待處理案件：1 件</span>
+            <span class="badge bg-danger px-3 py-2 fw-bold" id="badge-pending-count">共 0 件</span>
           </div>
 
-          <div class="table-responsive">
-            <table class="table align-middle table-hover mb-0">
-              <thead class="table-light text-secondary small text-uppercase">
-                <tr>
-                  <th style="white-space: nowrap;">通報單號</th>
-                  <th style="white-space: nowrap;">通報市民</th>
-                  <th>災害描述</th>
-                  <th style="white-space: nowrap;">緊急程度評定</th>
-                  <th>指派志工</th>
-                  <th style="text-align: center; white-space: nowrap;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="community-audit-tbody">
-                <tr id="default-task-row">
-                  <td style="white-space: nowrap;"><code class="text-danger fw-bold">#RPT-20260915-01</code></td>
-                  <td style="white-space: nowrap;" class="fw-bold text-dark">市民 王先生</td>
-                  <td class="text-secondary small">地下室配電箱積水，急需斷電修繕</td>
-                  <td style="white-space: nowrap;">
-                    <select class="form-select form-select-sm" id="urg-default" style="min-width: 110px;">
-                      <option value="一般">一般</option>
-                      <option value="急迫" selected>急迫</option>
-                      <option value="特急">特急</option>
-                    </select>
-                  </td>
-                  <td>
-                    <select class="form-select form-select-sm" id="vol-default" style="min-width: 170px;">
-                      <option value="張師傅 (水電專長)" selected>張師傅 (水電專長)</option>
-                      <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
-                    </select>
-                  </td>
-                  <td style="white-space: nowrap; text-align: center;">
-                    <button class="btn btn-sm btn-primary py-1 px-3 fw-semibold" onclick="handleDefaultDispatch(this)">
-                      <i class="bi bi-check-lg"></i> 核定派遣
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- 篩選與搜尋工具列 -->
+          <div class="row g-2 mb-3 p-2 bg-light rounded border">
+            <div class="col-12 col-md-4">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="admin-report-keyword" class="form-control" placeholder="搜尋單號/地點/通報人/描述..." oninput="filterAndRenderAdminReports()">
+              </div>
+            </div>
+            <div class="col-4 col-md-3">
+              <select id="admin-report-district" class="form-select form-select-sm" onchange="filterAndRenderAdminReports()">
+                <option value="ALL">全部行政區</option>
+                <option value="北投區">北投區</option><option value="士林區">士林區</option>
+                <option value="中山區">中山區</option><option value="大同區">大同區</option>
+                <option value="內湖區">內湖區</option><option value="松山區">松山區</option>
+                <option value="萬華區">萬華區</option><option value="中正區">中正區</option>
+                <option value="大安區">大安區</option><option value="信義區">信義區</option>
+                <option value="南港區">南港區</option><option value="文山區">文山區</option>
+              </select>
+            </div>
+            <div class="col-4 col-md-3">
+              <select id="admin-report-status" class="form-select form-select-sm" onchange="filterAndRenderAdminReports()">
+                <option value="ALL">全部狀態</option>
+                <option value="通報受理" selected>待處理 (通報受理)</option>
+                <option value="派員現場">已派員現場</option>
+                <option value="已結案">已結案</option>
+              </select>
+            </div>
+            <div class="col-4 col-md-2">
+              <select id="admin-report-sort" class="form-select form-select-sm border-danger text-danger fw-bold" onchange="filterAndRenderAdminReports()">
+                <option value="desc">由新到舊</option>
+                <option value="asc">由舊到新</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 點擊展開手風琴列表 -->
+          <div class="accordion" id="adminReportsAccordion">
+            <div class="text-center py-4 text-muted small">載入全區災情通報資料中...</div>
           </div>
         </div>
       </div>
 
-      <!-- 標籤 2：需求申請審核 (原物資申請) -->
+      <!-- 標籤 2：需求申請審核 -->
       <div class="tab-pane fade" id="tab-supplies">
-        <div class="pro-card p-4 shadow-sm bg-white border rounded mb-4 border-start border-primary border-4">
-          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div class="pro-card p-3 p-md-4 shadow-sm bg-white border rounded mb-4 border-start border-primary border-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <div>
               <h5 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-2"></i>待審核民眾需求申請</h5>
               <small class="text-muted">連動民眾端線上調度申請，核准將自動扣減庫存</small>
@@ -121,7 +121,7 @@
           </div>
 
           <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 mobile-card-table">
               <thead class="table-light small">
                 <tr>
                   <th style="white-space: nowrap;">申請單號</th>
@@ -147,10 +147,155 @@
 
 {% block extra_js %}
 <script>
+let allDisasterReports = [];
+
 document.addEventListener("DOMContentLoaded", () => {
-  loadNewDisasterReports();
+  loadAllDisasterReports();
   loadAdminPendingSupplies();
 });
+
+async function loadAllDisasterReports() {
+  const container = document.getElementById("adminReportsAccordion");
+  try {
+    const res = await fetch("/api/disaster-report?scope=all");
+    const json = await res.json();
+    if (json.status === "success") {
+      allDisasterReports = json.data || [];
+      const unhandledCount = allDisasterReports.filter(r => r.status === "通報受理").length;
+      document.getElementById("top-pending-count").innerText = `${allDisasterReports.length} 件`;
+      document.getElementById("top-unhandled-sub").innerText = `待處理：${unhandledCount} 件`;
+      filterAndRenderAdminReports();
+    }
+  } catch (e) {
+    if (container) container.innerHTML = `<div class="text-center text-danger py-3">讀取災情通報失敗</div>`;
+  }
+}
+
+function filterAndRenderAdminReports() {
+  const container = document.getElementById("adminReportsAccordion");
+  if (!container) return;
+
+  const kw = (document.getElementById("admin-report-keyword")?.value || "").trim().toLowerCase();
+  const distFilter = document.getElementById("admin-report-district")?.value || "ALL";
+  const statusFilter = document.getElementById("admin-report-status")?.value || "ALL";
+  const sortMode = document.getElementById("admin-report-sort")?.value || "desc";
+
+  let list = [...allDisasterReports];
+
+  if (distFilter !== "ALL") {
+    list = list.filter(r => (r.district || "").includes(distFilter));
+  }
+  if (statusFilter !== "ALL") {
+    list = list.filter(r => (r.status || "通報受理") === statusFilter);
+  }
+  if (kw) {
+    list = list.filter(r =>
+      (r.report_no || "").toLowerCase().includes(kw) ||
+      (r.user_name || "").toLowerCase().includes(kw) ||
+      (r.district || "").toLowerCase().includes(kw) ||
+      (r.location_description || "").toLowerCase().includes(kw) ||
+      (r.description || "").toLowerCase().includes(kw)
+    );
+  }
+
+  list.sort((a, b) => {
+    const tA = new Date(a.reported_at_str).getTime() || 0;
+    const tB = new Date(b.reported_at_str).getTime() || 0;
+    return sortMode === "asc" ? (tA - tB) : (tB - tA);
+  });
+
+  document.getElementById("badge-pending-count").innerText = `顯示 ${list.length} 件`;
+  container.innerHTML = "";
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="text-center py-4 text-muted small">無符合篩選條件的災情通報案件。</div>`;
+    return;
+  }
+
+  list.forEach((task, idx) => {
+    const collapseId = `adminRptCollapse_${idx}`;
+    let statusBadge = `<span class="badge bg-danger">通報受理</span>`;
+    if (task.status === "派員現場") statusBadge = `<span class="badge bg-warning text-dark">派員現場</span>`;
+    else if (task.status === "已結案") statusBadge = `<span class="badge bg-success">已結案</span>`;
+
+    const imgHtml = task.image_url
+      ? `<div class="mt-2"><span class="text-muted small d-block mb-1">現場相片：</span><img src="${task.image_url}" class="img-fluid rounded border" style="max-height: 150px;"></div>`
+      : "";
+
+    container.innerHTML += `
+      <div class="accordion-item mb-2 border rounded shadow-sm" id="task-card-${task.report_no}">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-2 gap-1">
+              <div>
+                ${statusBadge}
+                <code class="text-danger fw-bold ms-1">#${task.report_no}</code>
+                <span class="badge bg-light text-dark border ms-1">${task.district}</span>
+                <strong class="text-dark ms-1">${task.location_description || '市區路段'}</strong>
+              </div>
+              <div class="small text-muted">
+                <span class="me-2"><i class="bi bi-person me-1"></i>${task.user_name}</span>
+                <span class="font-monospace">${task.reported_at_str}</span>
+              </div>
+            </div>
+          </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#adminReportsAccordion">
+          <div class="accordion-body bg-light">
+            <div class="p-3 bg-white rounded border mb-3 small">
+              <div class="mb-2"><strong>通報市民：</strong>${task.user_name} ｜ <strong>通報時間：</strong><span class="font-monospace">${task.reported_at_str}</span></div>
+              <div class="mb-2"><strong>災害地點：</strong>${task.district} ${task.location_description || ''}</div>
+              <div><strong>現場災害詳細描述：</strong><p class="mb-0 mt-1 text-secondary" style="white-space: pre-line;">${task.description}</p></div>
+              ${imgHtml}
+            </div>
+
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold text-dark mb-1">緊急程度評定</label>
+                <select class="form-select form-select-sm" id="urg-${task.report_no}">
+                  <option value="一般" ${task.urgency === '一般' ? 'selected' : ''}>一般</option>
+                  <option value="急迫" ${task.urgency !== '一般' && task.urgency !== '特急' ? 'selected' : ''}>急迫</option>
+                  <option value="特急" ${task.urgency === '特急' ? 'selected' : ''}>特急</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-5">
+                <label class="form-label small fw-bold text-dark mb-1">指派支援志工</label>
+                <select class="form-select form-select-sm" id="vol-${task.report_no}">
+                  <option value="張師傅 (水電專長)">張師傅 (水電專長)</option>
+                  <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
+                  <option value="陳隊員 (醫療急救)">陳隊員 (醫療急救)</option>
+                  <option value="林司機 (車輛駕駛)">林司機 (車輛駕駛)</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <button class="btn btn-sm btn-primary w-100 fw-bold py-1" onclick="auditCase('${task.report_no}', 'dispatch')">
+                  <i class="bi bi-check-lg me-1"></i>核定派遣
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+async function auditCase(reportNo, action) {
+  const vol = document.getElementById(`vol-${reportNo}`)?.value || "志工機動隊";
+  const urg = document.getElementById(`urg-${reportNo}`)?.value || "急迫";
+
+  await fetch("/api/disaster-report/audit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      report_no: reportNo, 
+      action: action, 
+      volunteer: vol,
+      urgency: urg
+    })
+  });
+  loadAllDisasterReports();
+}
 
 async function loadAdminPendingSupplies() {
   const tbody = document.getElementById("admin-pending-supplies-tbody");
@@ -171,17 +316,19 @@ async function loadAdminPendingSupplies() {
       pendings.forEach(p => {
         tbody.innerHTML += `
           <tr>
-            <td style="white-space: nowrap;"><code class="text-primary fw-bold">${p.order_no}</code></td>
-            <td style="white-space: nowrap;"><strong>${p.user_name}</strong><br><small class="text-muted">${p.contact_phone}</small></td>
-            <td><strong>${p.item_name}</strong></td>
-            <td><small class="text-secondary">${p.detail_address}</small></td>
-            <td style="white-space: nowrap; text-align: center;">
-              <button class="btn btn-sm btn-success py-1 px-2 me-1" onclick="auditSupplyOrder('${p.order_no}', 'approve')">
-                <i class="bi bi-check-circle"></i> 核准出庫
-              </button>
-              <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="auditSupplyOrder('${p.order_no}', 'reject')">
-                婉拒
-              </button>
+            <td data-label="申請單號" style="white-space: nowrap;"><code class="text-primary fw-bold">${p.order_no}</code></td>
+            <td data-label="申請人" style="white-space: nowrap;"><strong>${p.user_name}</strong><br><small class="text-muted">${p.contact_phone}</small></td>
+            <td data-label="申請品項" class="mobile-block-field"><strong>${p.item_name}</strong></td>
+            <td data-label="受援地址"><small class="text-secondary">${p.detail_address}</small></td>
+            <td data-label="審核操作" style="white-space: nowrap; text-align: center;">
+              <div class="d-flex gap-1 justify-content-end w-100">
+                <button class="btn btn-sm btn-success py-1 px-2 flex-fill" onclick="auditSupplyOrder('${p.order_no}', 'approve')">
+                  <i class="bi bi-check-circle"></i> 核准出庫
+                </button>
+                <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="auditSupplyOrder('${p.order_no}', 'reject')">
+                  婉拒
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -197,83 +344,6 @@ async function auditSupplyOrder(orderNo, action) {
     body: JSON.stringify({ order_no: orderNo, action: action })
   });
   loadAdminPendingSupplies();
-}
-
-async function loadNewDisasterReports() {
-  try {
-    const res = await fetch("/api/disaster-report?scope=all");
-    const json = await res.json();
-    if (json.status === "success" && json.data) {
-      const tbody = document.getElementById("community-audit-tbody");
-      const newItems = json.data.filter(d => d.report_no !== 'RPT-20260915-01' && d.status === '通報受理');
-      
-      const totalCount = 1 + newItems.length;
-      document.getElementById("top-pending-count").innerText = `${totalCount} 件`;
-      document.getElementById("badge-pending-count").innerText = `待處理案件：${totalCount} 件`;
-
-      newItems.forEach(task => {
-        tbody.innerHTML += `
-          <tr id="task-${task.report_no}">
-            <td style="white-space: nowrap;"><code class="text-danger fw-bold">#${task.report_no}</code></td>
-            <td style="white-space: nowrap;" class="fw-bold text-dark">${task.user_name}</td>
-            <td class="text-secondary small">
-              <strong class="text-dark">【${task.district}】${task.location_description || ''}</strong><br>
-              ${task.description}
-            </td>
-            <td style="white-space: nowrap;">
-              <select class="form-select form-select-sm" id="urg-${task.report_no}" style="min-width: 110px;">
-                <option value="一般">一般</option>
-                <option value="急迫" selected>急迫</option>
-                <option value="特急">特急</option>
-              </select>
-            </td>
-            <td>
-              <select class="form-select form-select-sm" id="vol-${task.report_no}" style="min-width: 170px;">
-                <option value="張師傅 (水電專長)">張師傅 (水電專長)</option>
-                <option value="李隊長 (機具抽水)">李隊長 (機具抽水)</option>
-                <option value="陳隊員 (醫療急救)">陳隊員 (醫療急救)</option>
-                <option value="林司機 (車輛駕駛)">林司機 (車輛駕駛)</option>
-              </select>
-            </td>
-            <td style="white-space: nowrap; text-align: center;">
-              <button class="btn btn-sm btn-primary py-1 px-3 fw-semibold" onclick="auditCase('${task.report_no}', 'dispatch')">
-                <i class="bi bi-check-lg"></i> 核定派遣
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-    }
-  } catch(e) {}
-}
-
-function handleDefaultDispatch(btn) {
-  document.getElementById("default-task-row")?.remove();
-  updateCounts();
-}
-
-async function auditCase(reportNo, action) {
-  const vol = document.getElementById(`vol-${reportNo}`)?.value || "志工機動隊";
-  const urg = document.getElementById(`urg-${reportNo}`)?.value || "急迫";
-
-  await fetch("/api/disaster-report/audit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ 
-      report_no: reportNo, 
-      action: action, 
-      volunteer: vol,
-      urgency: urg
-    })
-  });
-  document.getElementById(`task-${reportNo}`)?.remove();
-  updateCounts();
-}
-
-function updateCounts() {
-  const remain = document.querySelectorAll("#community-audit-tbody tr").length;
-  document.getElementById("top-pending-count").innerText = `${remain} 件`;
-  document.getElementById("badge-pending-count").innerText = `待處理案件：${remain} 件`;
 }
 </script>
 {% endblock %}
