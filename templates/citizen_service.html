@@ -16,7 +16,7 @@
         <button class="list-group-item list-group-item-action d-flex align-items-center active py-2" data-bs-toggle="pill" data-bs-target="#panel-report">
           <i class="bi bi-camera me-2 fs-6 text-danger"></i> 災情通報
         </button>
-        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-supply" onclick="verifyDemandZoneEligibility()">
+        <button class="list-group-item list-group-item-action d-flex align-items-center py-2" data-bs-toggle="pill" data-bs-target="#panel-supply" onclick="verifyDemandZoneEligibility(); loadWeeklySupplyQuota();">
           <i class="bi bi-box-seam me-2 fs-6 text-primary"></i> 需求申請
         </button>
         <button class="list-group-item list-group-item-action d-flex align-items-center py-2 text-warning fw-bold" data-bs-toggle="pill" data-bs-target="#panel-volunteer">
@@ -231,7 +231,8 @@
                   </div>
                 </div>
 
-                <div class="card border">
+                <!-- 本次申請項目清單 -->
+                <div class="card border mb-3">
                   <div class="card-header bg-white py-2 small fw-bold text-dark d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-cart-check text-primary me-1"></i>本次申請項目清單</span>
                     <span class="badge bg-secondary" id="selected-items-count">已選 0 項</span>
@@ -252,6 +253,32 @@
                           <tr><td colspan="5" class="text-center text-muted small py-3">尚未加入品項，請從上方選單挑選後點擊「加入清單」</td></tr>
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 本週物資申請上限進度條 -->
+                <div class="p-3 bg-light rounded border" id="weekly-quota-box">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-1">
+                    <span class="fw-bold text-dark small">
+                      <i class="bi bi-speedometer2 text-primary me-1"></i>本週物資申請額度上限
+                    </span>
+                    <span class="badge bg-primary font-monospace" id="quota-summary-badge">本週已用 0 / 週上限 30</span>
+                  </div>
+
+                  <div class="progress mb-2" style="height: 14px; background-color: #e2e8f0;">
+                    <div class="progress-bar bg-success" id="quota-bar-used" role="progressbar" style="width: 0%;" title="本週已用量"></div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" id="quota-bar-current" role="progressbar" style="width: 0%;" title="此次申請數量"></div>
+                  </div>
+
+                  <div class="d-flex flex-wrap justify-content-between small text-muted gap-2">
+                    <div>
+                      <span class="me-3"><i class="bi bi-square-fill text-success me-1"></i>本週已用量：<strong class="text-dark" id="quota-used-val">0</strong></span>
+                      <span class="me-3"><i class="bi bi-square-fill text-info me-1"></i>此次數量：<strong class="text-primary" id="quota-current-val">0</strong></span>
+                      <span>週上限：<strong class="text-dark" id="quota-limit-val">30</strong></span>
+                    </div>
+                    <div class="text-end" id="quota-remain-hint">
+                      送出後剩餘額度：<strong class="text-success">30</strong> 單位
                     </div>
                   </div>
                 </div>
@@ -556,12 +583,9 @@
               <span class="text-muted">通報時間：</span><span class="font-monospace text-dark fw-bold" id="dmodal-time"></span>
             </div>
             <div class="col-12 col-md-6">
-              <span class="text-muted">緊急程度評級：</span><span class="badge bg-warning text-dark" id="dmodal-urgency"></span>
-            </div>
-            <div class="col-12 col-md-6">
               <span class="text-muted">通報市民：</span><span class="fw-semibold text-dark" id="dmodal-username"></span>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12">
               <span class="text-muted">通報詳細地點：</span><span class="fw-bold text-dark" id="dmodal-location"></span>
             </div>
             <div class="col-12 mt-2 pt-2 border-top">

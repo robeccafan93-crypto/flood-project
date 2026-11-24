@@ -3,7 +3,7 @@ import json
 import math
 import urllib.request
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
@@ -19,11 +19,46 @@ DB_CONNECTION_STRING = os.getenv(
     "postgresql://neondb_owner:npg_BbAq2rUeTQD9@ep-sweet-dawn-azygay6t-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 )
 
+TAIPEI_TZ = timezone(timedelta(hours=8))
+WEEKLY_QUOTA_LIMIT = 30  # 每人每週申請總數量上限（每週一 00:00 台北時間重置）
+
 def get_db():
     return psycopg2.connect(DB_CONNECTION_STRING, cursor_factory=RealDictCursor)
 
+def get_taipei_week_start_utc_naive():
+    """計算台北時間 (UTC+8) 本週一 00:00:00，轉為資料庫無時區時間比對"""
+    now_tpe = datetime.now(TAIPEI_TZ)
+    monday_tpe = (now_tpe - timedelta(days=now_tpe.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    next_monday_tpe = monday_tpe + timedelta(days=7)
+    return monday_tpe.replace(tzinfo=None), next_monday_tpe.strftime("%Y-%m-%d 00:00")
+
+def calc_user_weekly_used(cur, username, user_name):
+    week_start, next_reset_str = get_taipei_week_start_utc_naive()
+    cur.execute("""
+        SELECT items_json, quantity, status
+        FROM supplies_requests
+        WHERE (user_account = %s OR user_name = %s)
+          AND status <> '已婉拒'
+          AND created_at >= %s
+    """, (username, user_name, week_start))
+    rows = cur.fetchall()
+    used_total = 0
+    for r in rows:
+        items = r.get("items_json")
+        if isinstance(items, str):
+            try:
+                items = json.loads(items)
+            except Exception:
+                items = None
+        if isinstance(items, list) and len(items) > 0:
+            for it in items:
+                used_total += int(it.get("quantity", 0))
+        else:
+            used_total += int(r.get("quantity") or 0)
+    return used_total, next_reset_str
+
 def generate_custom_order_no(cur, prefix="REQ"):
-    today_str = datetime.now().strftime("%Y%m%d")
+    today_str = datetime.now(TAIPEI_TZ).strftime("%Y%m%d")
     search_pattern = f"{prefix}-{today_str}-%"
     cur.execute(
         "SELECT COUNT(*) AS count FROM supplies_requests WHERE order_no LIKE %s",
@@ -309,7 +344,7 @@ def api_disaster_report():
             report_type = data.get("report_type", "積淹水災情")
             user_id = session.get("user_id", 1)
 
-            today_str = datetime.now().strftime("%Y%m%d")
+            today_str = datetime.now(TAIPEI_TZ).strftime("%Y%m%d")
             try:
                 cur.execute("SELECT COUNT(*) AS count FROM disaster_reports WHERE report_no LIKE %s", (f"RPT-{today_str}-%",))
                 cnt_res = cur.fetchone()
@@ -340,7 +375,7 @@ def api_disaster_report():
                     session.get("name", "王小明"),
                     district,
                     "待評估",
-                    "待評估",
+                    "一般",
                     True
                 )
             )
@@ -366,7 +401,6 @@ def api_disaster_report():
                            COALESCE(report_type, '一般通報') as report_type,
                            description, image_url,
                            COALESCE(status, '通報受理') as status,
-                           COALESCE(urgency, '待評估') as urgency,
                            COALESCE(assigned_volunteer, '') as assigned_volunteer,
                            TO_CHAR(COALESCE(reported_at, NOW()), 'YYYY-MM-DD HH24:MI') as reported_at_str
                     FROM disaster_reports
@@ -382,7 +416,6 @@ def api_disaster_report():
                            COALESCE(report_type, '一般通報') as report_type,
                            description, image_url,
                            COALESCE(status, '通報受理') as status,
-                           COALESCE(urgency, '待評估') as urgency,
                            COALESCE(assigned_volunteer, '') as assigned_volunteer,
                            TO_CHAR(COALESCE(reported_at, NOW()), 'YYYY-MM-DD HH24:MI') as reported_at_str
                     FROM disaster_reports
@@ -400,6 +433,7 @@ def api_disaster_report():
         if cur: cur.close()
         if conn: conn.close()
 
+# 災情審核與派案（移除緊急程度評定，直接核定指派志工）
 @app.route("/api/disaster-report/audit", methods=["POST"])
 def api_audit_disaster_report():
     conn = None
@@ -409,27 +443,25 @@ def api_audit_disaster_report():
         cur = conn.cursor()
         data = request.json or {}
         report_no = data.get("report_no")
-        urgency = data.get("urgency", "急迫")
         action = data.get("action", "dispatch")
-        volunteer = data.get("volunteer", "張師傅 (水電專長)")
+        volunteer = data.get("volunteer", "志工機動隊")
 
         new_status = "派員現場" if action == "dispatch" else "已結案"
         cur.execute("""
             UPDATE disaster_reports 
-            SET status = %s, urgency = %s, assigned_volunteer = %s, updated_at = NOW()
+            SET status = %s, assigned_volunteer = %s, updated_at = NOW()
             WHERE report_no = %s OR report_id::text = %s
-        """, (new_status, urgency, volunteer, str(report_no), str(report_no)))
+        """, (new_status, volunteer, str(report_no), str(report_no)))
 
-        if urgency in ["急迫", "特急"]:
-            cur.execute("""
-                INSERT INTO volunteer_tasks (report_id, title, description, district, location, required_volunteers, status, reward_points)
-                SELECT COALESCE(report_no, report_id::text), '【緊急災情支援】' || description, description, district, location_description, 2, '招募中', 20
-                FROM disaster_reports 
-                WHERE (report_no = %s OR report_id::text = %s)
-                AND NOT EXISTS (
-                    SELECT 1 FROM volunteer_tasks WHERE report_id = %s OR report_id = report_no
-                )
-            """, (str(report_no), str(report_no), str(report_no)))
+        cur.execute("""
+            INSERT INTO volunteer_tasks (report_id, title, description, district, location, required_volunteers, assigned_user, status, reward_points)
+            SELECT COALESCE(report_no, report_id::text), '【緊急災情支援】' || description, description, district, location_description, 1, %s, '執行中 (待申請者驗收)', 20
+            FROM disaster_reports 
+            WHERE (report_no = %s OR report_id::text = %s)
+            AND NOT EXISTS (
+                SELECT 1 FROM volunteer_tasks WHERE report_id = %s OR report_id = report_no
+            )
+        """, (volunteer, str(report_no), str(report_no), str(report_no)))
 
         conn.commit()
         return jsonify({"status": "success", "message": f"案件 {report_no} 審核完成！已派工：{volunteer}"})
@@ -440,7 +472,6 @@ def api_audit_disaster_report():
         if cur: cur.close()
         if conn: conn.close()
 
-# 從資料庫 volunteers 表讀取全部志工（包含預設編制志工與註冊志工）
 @app.route("/api/registered-volunteers", methods=["GET"])
 def api_registered_volunteers():
     conn = None
@@ -463,6 +494,30 @@ def api_registered_volunteers():
         """)
         rows = cur.fetchall()
         return jsonify({"status": "success", "data": rows})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+# 查詢個人本週物資申請額度與上限（每週一 00:00 台北時間重置）
+@app.route("/api/supply-quota", methods=["GET"])
+def api_supply_quota():
+    conn = None
+    cur = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        current_user = session.get("username", "guest")
+        current_name = session.get("name", "王小明")
+        used_total, next_reset_str = calc_user_weekly_used(cur, current_user, current_name)
+        return jsonify({
+            "status": "success",
+            "weekly_limit": WEEKLY_QUOTA_LIMIT,
+            "weekly_used": used_total,
+            "remaining": max(0, WEEKLY_QUOTA_LIMIT - used_total),
+            "next_reset_tpe": next_reset_str
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
@@ -496,6 +551,18 @@ def api_supply_request():
             if not items:
                 return jsonify({"status": "error", "message": "申請清單不可為空！"}), 400
 
+            current_user = session.get("username", "guest")
+            current_name = session.get("name", "王小明")
+            used_total, next_reset_str = calc_user_weekly_used(cur, current_user, current_name)
+
+            this_request_total = sum(int(it.get("quantity", 0)) for it in items)
+            if used_total + this_request_total > WEEKLY_QUOTA_LIMIT:
+                remain = max(0, WEEKLY_QUOTA_LIMIT - used_total)
+                return jsonify({
+                    "status": "error",
+                    "message": f"超過本週物資申請上限（每週上限 {WEEKLY_QUOTA_LIMIT} 單位，您本週已用 {used_total}，剩餘可申請 {remain}，將於每週一 00:00 重置）！"
+                }), 400
+
             type_set = []
             item_desc_list = []
             for it in items:
@@ -528,11 +595,11 @@ def api_supply_request():
                 (
                     order_no,
                     combined_type_str,
-                    session.get("username", "guest"),
-                    session.get("name", "王小明"),
+                    current_user,
+                    current_name,
                     matched_zone["district"],
                     combined_item_str,
-                    len(items),
+                    this_request_total,
                     contact_phone,
                     detail_address,
                     lat,
@@ -634,7 +701,7 @@ def api_audit_supply_request():
                     """, (qty, f"%{it_name}%", f"%{dist}%"))
 
             cur.execute("UPDATE supplies_requests SET status = '審核核發' WHERE order_no = %s", (order_no,))
-            msg = f"訂單 {order_no} 已審核核發，資料庫庫存已同步扣減！"
+            msg = f"訂單 {order_no} 已審核核發，庫存已同步扣減！"
         else:
             cur.execute("UPDATE supplies_requests SET status = '已婉拒' WHERE order_no = %s", (order_no,))
             msg = f"訂單 {order_no} 已婉拒申請。"

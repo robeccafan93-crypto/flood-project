@@ -28,7 +28,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
         <div>
           <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-boxes text-primary me-2"></i>物資庫存量</h5>
-          <small class="text-muted"><i class="bi bi-database-check text-success me-1"></i>已連動資料庫，支援社區分區查詢</small>
+          <small class="text-muted">即時監控各社區物資與機具設備庫存水位</small>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
           <select id="filter-district" class="form-select form-select-sm border-danger fw-bold text-danger" style="width: 115px;">
@@ -72,13 +72,13 @@
             </tr>
           </thead>
           <tbody id="resource-table-body">
-            <tr><td colspan="7" class="text-center py-4 text-muted">連線資料庫讀取物資庫存中...</td></tr>
+            <tr><td colspan="7" class="text-center py-4 text-muted">讀取物資庫存中...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 模組 B: 跨區物資調撥 (標題精簡為「跨區物資調撥」，推薦卡片排版對齊最佳化) -->
+    <!-- 模組 B: 跨區物資調撥 -->
     <div class="pro-card p-3 p-md-4 shadow-sm mb-4 border-start border-success border-4 bg-white">
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
         <div>
@@ -134,7 +134,7 @@
         </div>
       </div>
 
-      <!-- 調撥紀錄表 -->
+      <!-- 調撥紀錄表 (已將「資料庫同步狀態」改為「狀態」，並移除「資料庫已同步更新」) -->
       <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-clock-history me-1"></i>跨社區物資調撥紀錄</h6>
       <div class="table-responsive">
         <table class="table table-hover align-middle table-custom mb-0">
@@ -145,7 +145,7 @@
               <th style="white-space: nowrap;">調撥品項</th>
               <th style="white-space: nowrap;">數量</th>
               <th style="white-space: nowrap;">調撥型態</th>
-              <th style="white-space: nowrap;">資料庫同步狀態</th>
+              <th style="white-space: nowrap;">狀態</th>
             </tr>
           </thead>
           <tbody id="dispatch-table-body">
@@ -337,7 +337,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// 系統推薦排序卡片（排版對齊整潔、不折行擠壓）
 async function fetchSmartRecommendations() {
   const targetDist = document.getElementById("rec-target-district")?.value || "大同區";
   const itemName = document.getElementById("rec-item-name")?.value || "高密度防汛沙包";
@@ -409,7 +408,7 @@ async function loadDatabaseSupplies() {
       renderFilteredSupplies();
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">讀取資料庫失敗</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">讀取庫存失敗</td></tr>`;
   }
 }
 
@@ -488,7 +487,7 @@ async function executeTransfer(fromDist, toDist, itemName, qty) {
         <td style="white-space: nowrap;">${itemName}</td>
         <td style="white-space: nowrap;">${qty}</td>
         <td style="white-space: nowrap;"><span class="badge bg-primary">智慧推薦調撥</span></td>
-        <td style="white-space: nowrap;"><span class="badge bg-success">資料庫已同步更新</span></td>
+        <td style="white-space: nowrap;"><span class="badge bg-success">已調撥完成</span></td>
       </tr>
     `;
     tbody.insertAdjacentHTML("afterbegin", tr);

@@ -11,7 +11,15 @@ let selectedDisasterTypes = [];
 // 當前驗證通過的災區座標
 let verifiedZoneCoords = null;
 
-// 紅(嚴重)與橘(偏高)災害警戒區（與預警避難地圖完全同步）
+// 本週物資申請額度狀態（每週一 00:00 台北時間重置）
+let weeklyQuotaState = {
+  limit: 30,
+  used: 0,
+  remaining: 30,
+  nextReset: ""
+};
+
+// 紅(嚴重)與橘(偏高)災害警戒區
 const RED_ORANGE_ZONES = [
   { name: "北投低窪警戒區", district: "北投區", level: "red", label: "嚴重 (紅色警戒區)", lat: 25.1325, lon: 121.4988, radiusKm: 2.5 },
   { name: "大同延平北路段", district: "大同區", level: "orange", label: "偏高 (橘色警戒區)", lat: 25.0655, lon: 121.5145, radiusKm: 2.2 },
@@ -37,7 +45,6 @@ function findMatchedRedOrangeZone(lat, lon) {
   return null;
 }
 
-// 核驗是否處於紅色(嚴重)或橘色(偏高)災害發生區域
 function verifyDemandZoneEligibility() {
   const banner = document.getElementById("zone-eligibility-banner");
   const submitBtn = document.getElementById("btn-submit-supply");
@@ -109,71 +116,71 @@ function applyZoneVerification(lat, lon) {
       submitBtn.classList.add("btn-secondary");
     }
   }
+  updateWeeklyQuotaUI();
 }
 
-// 資源主類型、子分類與具體品項規格字典
+// 資源字典（依庫存水位設定合理單品項最高上限 maxQty，防止單人超領）
 const resourceDictionary = {
   "物": {
     "防汛阻水類": [
-      { name: "高密度防汛沙包", unit: "包", defaultQty: 10 },
-      { name: "鋁合金快速擋板", unit: "組", defaultQty: 1 },
-      { name: "高分子膨脹吸水袋", unit: "個", defaultQty: 5 }
+      { name: "高密度防汛沙包", unit: "包", defaultQty: 5, maxQty: 20 },
+      { name: "鋁合金快速擋板", unit: "組", defaultQty: 1, maxQty: 4 },
+      { name: "高分子膨脹吸水袋", unit: "個", defaultQty: 5, maxQty: 15 }
     ],
     "應急民生類": [
-      { name: "常溫防災乾糧箱", unit: "箱", defaultQty: 1 },
-      { name: "箱裝應急純淨水", unit: "箱", defaultQty: 2 },
-      { name: "防汛醫療急救包", unit: "組", defaultQty: 1 }
+      { name: "常溫防災乾糧箱", unit: "箱", defaultQty: 1, maxQty: 5 },
+      { name: "箱裝應急純淨水", unit: "箱", defaultQty: 2, maxQty: 6 },
+      { name: "防汛醫療急救包", unit: "組", defaultQty: 1, maxQty: 3 }
     ],
     "照明通訊類": [
-      { name: "太陽能手搖收音機", unit: "台", defaultQty: 1 },
-      { name: "高流明防汛頭燈", unit: "個", defaultQty: 2 },
-      { name: "強光防水防汛手電筒", unit: "個", defaultQty: 2 }
+      { name: "太陽能手搖收音機", unit: "台", defaultQty: 1, maxQty: 2 },
+      { name: "高流明防汛頭燈", unit: "個", defaultQty: 2, maxQty: 4 },
+      { name: "強光防水防汛手電筒", unit: "個", defaultQty: 2, maxQty: 4 }
     ]
   },
   "機": {
     "抽水排水設備": [
-      { name: "移動式沉水抽水泵浦", unit: "台", defaultQty: 1 },
-      { name: "大馬力柴油抽水機", unit: "台", defaultQty: 1 },
-      { name: "高壓排水平面水管(20米)", unit: "捆", defaultQty: 2 }
+      { name: "移動式沉水抽水泵浦", unit: "台", defaultQty: 1, maxQty: 2 },
+      { name: "大馬力柴油抽水機", unit: "台", defaultQty: 1, maxQty: 1 },
+      { name: "高壓排水平面水管(20米)", unit: "捆", defaultQty: 1, maxQty: 3 }
     ],
     "緊急動力設備": [
-      { name: "小型汽油發電機", unit: "台", defaultQty: 1 },
-      { name: "四衝程柴油發電機組", unit: "台", defaultQty: 1 },
-      { name: "大容量儲能行動電源", unit: "台", defaultQty: 1 }
+      { name: "小型汽油發電機", unit: "台", defaultQty: 1, maxQty: 1 },
+      { name: "四衝程柴油發電機組", unit: "台", defaultQty: 1, maxQty: 1 },
+      { name: "大容量儲能行動電源", unit: "台", defaultQty: 1, maxQty: 2 }
     ],
     "清淤除障機具": [
-      { name: "長柄液壓鏈鋸", unit: "台", defaultQty: 1 },
-      { name: "高壓泥沙沖洗機", unit: "台", defaultQty: 1 },
-      { name: "防汛橡皮艇與推進槳", unit: "組", defaultQty: 1 }
+      { name: "長柄液壓鏈鋸", unit: "台", defaultQty: 1, maxQty: 1 },
+      { name: "高壓泥沙沖洗機", unit: "台", defaultQty: 1, maxQty: 2 },
+      { name: "防汛橡皮艇與推進槳", unit: "組", defaultQty: 1, maxQty: 1 }
     ]
   },
   "人": {
     "醫療急救組": [
-      { name: "EMT 初級救護技術員", unit: "名", defaultQty: 1 },
-      { name: "社群傷患包紮與檢傷志工", unit: "名", defaultQty: 2 },
-      { name: "災區防疫消毒防護員", unit: "名", defaultQty: 1 }
+      { name: "EMT 初級救護技術員", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "社群傷患包紮與檢傷志工", unit: "名", defaultQty: 1, maxQty: 3 },
+      { name: "災區防疫消毒防護員", unit: "名", defaultQty: 1, maxQty: 2 }
     ],
     "水電維修組": [
-      { name: "水電搶修配電技師", unit: "名", defaultQty: 1 },
-      { name: "地下室浸水漏電檢測員", unit: "名", defaultQty: 1 },
-      { name: "線路短路緊急切斷技工", unit: "名", defaultQty: 1 }
+      { name: "水電搶修配電技師", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "地下室浸水漏電檢測員", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "線路短路緊急切斷技工", unit: "名", defaultQty: 1, maxQty: 2 }
     ],
     "機具操作組": [
-      { name: "移動式抽水泵浦操作員", unit: "名", defaultQty: 1 },
-      { name: "發電機與重機械操作手", unit: "名", defaultQty: 1 },
-      { name: "清淤高壓沖洗機技工", unit: "名", defaultQty: 1 }
+      { name: "移動式抽水泵浦操作員", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "發電機與重機械操作手", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "清淤高壓沖洗機技工", unit: "名", defaultQty: 1, maxQty: 2 }
     ],
     "車輛駕駛組": [
-      { name: "高底盤四驅車防汛駕駛", unit: "名", defaultQty: 1 },
-      { name: "重物物資搬運車輛司機", unit: "名", defaultQty: 1 },
-      { name: "撤離專車導引與駕駛員", unit: "名", defaultQty: 2 }
+      { name: "高底盤四驅車防汛駕駛", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "重物物資搬運車輛司機", unit: "名", defaultQty: 1, maxQty: 2 },
+      { name: "撤離專車導引與駕駛員", unit: "名", defaultQty: 1, maxQty: 2 }
     ]
   }
 };
 
 let pendingRequestItems = [];
 
-// 柔和淺色標籤配色
 const DISASTER_TAG_STYLES = {
   "路樹災情": "background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;",
   "廣告招牌災情": "background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;",
@@ -187,6 +194,7 @@ const DISASTER_TAG_STYLES = {
 document.addEventListener("DOMContentLoaded", () => {
   updateSubCatOptions();
   verifyDemandZoneEligibility();
+  loadWeeklySupplyQuota();
   loadSupplyHistory();
   loadDisasterLiveTicker();
   loadDisasterAccordion();
@@ -194,22 +202,18 @@ document.addEventListener("DOMContentLoaded", () => {
   loadBoardMessages();
   updateVolunteerUI();
 
-  // 需求申請歷史紀錄篩選
   document.getElementById("supply-search-keyword")?.addEventListener("input", filterAndRenderSupplyHistory);
   document.getElementById("supply-filter-type")?.addEventListener("change", filterAndRenderSupplyHistory);
   document.getElementById("supply-sort-time")?.addEventListener("change", filterAndRenderSupplyHistory);
 
-  // 災情追蹤篩選
   document.getElementById("disaster-search-keyword")?.addEventListener("input", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-filter-status")?.addEventListener("change", filterAndRenderDisasterAccordion);
   document.getElementById("disaster-sort-time")?.addEventListener("change", filterAndRenderDisasterAccordion);
 
-  // 留言板篩選
   document.getElementById("board-search-input")?.addEventListener("input", renderBoardList);
   document.getElementById("board-filter-select")?.addEventListener("change", renderBoardList);
   document.getElementById("board-sort-select")?.addEventListener("change", renderBoardList);
 
-  // 照片預覽與壓縮
   const fileInput = document.getElementById("report-img-file");
   if (fileInput) {
     fileInput.addEventListener("change", function(e) {
@@ -245,7 +249,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 留言板送出
   const btnSubmitMsg = document.getElementById("btn-submit-message");
   if (btnSubmitMsg) {
     btnSubmitMsg.addEventListener("click", async () => {
@@ -270,6 +273,62 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+async function loadWeeklySupplyQuota() {
+  try {
+    const res = await fetch("/api/supply-quota");
+    const json = await res.json();
+    if (json.status === "success") {
+      weeklyQuotaState.limit = json.weekly_limit || 30;
+      weeklyQuotaState.used = json.weekly_used || 0;
+      weeklyQuotaState.remaining = json.remaining ?? Math.max(0, weeklyQuotaState.limit - weeklyQuotaState.used);
+      weeklyQuotaState.nextReset = json.next_reset_tpe || "";
+      updateWeeklyQuotaUI();
+    }
+  } catch (e) {}
+}
+
+function updateWeeklyQuotaUI() {
+  const limit = weeklyQuotaState.limit;
+  const used = weeklyQuotaState.used;
+  const currentTotal = pendingRequestItems.reduce((sum, it) => sum + (parseInt(it.quantity) || 0), 0);
+  const totalAfterSubmit = used + currentTotal;
+  const remainAfter = Math.max(0, limit - totalAfterSubmit);
+  const isOver = totalAfterSubmit > limit;
+
+  const usedPct = Math.min(100, Math.round((used / limit) * 100));
+  const currentPct = Math.min(100 - usedPct, Math.round((currentTotal / limit) * 100));
+
+  const barUsed = document.getElementById("quota-bar-used");
+  const barCurrent = document.getElementById("quota-bar-current");
+  if (barUsed) barUsed.style.width = `${usedPct}%`;
+  if (barCurrent) {
+    barCurrent.style.width = `${currentPct}%`;
+    barCurrent.className = `progress-bar progress-bar-striped progress-bar-animated ${isOver ? 'bg-danger' : 'bg-info'}`;
+  }
+
+  const badge = document.getElementById("quota-summary-badge");
+  if (badge) {
+    badge.className = `badge font-monospace ${isOver ? 'bg-danger' : 'bg-primary'}`;
+    badge.innerText = `本週已用 ${used} / 週上限 ${limit}`;
+  }
+
+  const usedVal = document.getElementById("quota-used-val");
+  const curVal = document.getElementById("quota-current-val");
+  const limVal = document.getElementById("quota-limit-val");
+  const hintEl = document.getElementById("quota-remain-hint");
+  if (usedVal) usedVal.innerText = used;
+  if (curVal) curVal.innerText = currentTotal;
+  if (limVal) limVal.innerText = limit;
+
+  if (hintEl) {
+    if (isOver) {
+      hintEl.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i>已超出本週上限 ${totalAfterSubmit - limit} 單位，請減少數量！</span>`;
+    } else {
+      hintEl.innerHTML = `送出後剩餘額度：<strong class="text-success">${remainAfter}</strong> 單位`;
+    }
+  }
+}
 
 function updateSubCatOptions() {
   const mainCat = document.getElementById("select-main-cat")?.value || "物";
@@ -304,16 +363,30 @@ function addItemToRequestList() {
 
   const existIdx = pendingRequestItems.findIndex(i => i.item_name === targetItem.name);
   if (existIdx >= 0) {
-    pendingRequestItems[existIdx].quantity += targetItem.defaultQty;
+    const nextQty = Math.min(targetItem.maxQty, pendingRequestItems[existIdx].quantity + targetItem.defaultQty);
+    pendingRequestItems[existIdx].quantity = nextQty;
   } else {
     pendingRequestItems.push({
       resource_type: mainCat,
       sub_category: subCat,
       item_name: targetItem.name,
-      quantity: targetItem.defaultQty,
+      quantity: Math.min(targetItem.defaultQty, targetItem.maxQty),
+      max_qty: targetItem.maxQty,
       unit: targetItem.unit
     });
   }
+  renderRequestTable();
+}
+
+function updateItemQuantityWithCap(idx, rawVal) {
+  const item = pendingRequestItems[idx];
+  if (!item) return;
+  let val = parseInt(rawVal) || 1;
+  if (val < 1) val = 1;
+  if (val > item.max_qty) {
+    val = item.max_qty;
+  }
+  item.quantity = val;
   renderRequestTable();
 }
 
@@ -330,18 +403,25 @@ function renderRequestTable() {
   
   if (pendingRequestItems.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted small py-3">尚未加入品項，請從上方選單挑選後點擊「加入清單」</td></tr>`;
+    updateWeeklyQuotaUI();
     return;
   }
 
   tbody.innerHTML = "";
   pendingRequestItems.forEach((it, idx) => {
     let badgeClass = it.resource_type === "人" ? "bg-success" : (it.resource_type === "機" ? "bg-warning text-dark" : "bg-primary");
+    const isAtMax = it.quantity >= it.max_qty;
     tbody.innerHTML += `
       <tr>
         <td data-label="類型" style="white-space: nowrap;"><span class="badge ${badgeClass}">${it.resource_type}</span></td>
-        <td data-label="品項名稱"><strong>${it.item_name}</strong> <small class="text-muted">(${it.sub_category})</small></td>
+        <td data-label="品項名稱">
+          <strong>${it.item_name}</strong> <small class="text-muted">(${it.sub_category})</small>
+        </td>
         <td data-label="申請數量" style="white-space: nowrap;">
-          <input type="number" class="form-control form-control-sm text-center" style="width: 80px;" value="${it.quantity}" min="1" onchange="pendingRequestItems[${idx}].quantity = parseInt(this.value);">
+          <input type="number" class="form-control form-control-sm text-center fw-bold ${isAtMax ? 'border-warning text-danger' : ''}" 
+            style="width: 80px;" value="${it.quantity}" min="1" max="${it.max_qty}" 
+            onchange="updateItemQuantityWithCap(${idx}, this.value)"
+            oninput="if(parseInt(this.value) > ${it.max_qty}) this.value = ${it.max_qty};">
         </td>
         <td data-label="單位" style="white-space: nowrap;">${it.unit}</td>
         <td data-label="操作" style="text-align: center; white-space: nowrap;">
@@ -350,6 +430,8 @@ function renderRequestTable() {
       </tr>
     `;
   });
+
+  updateWeeklyQuotaUI();
 }
 
 function promptConfirmSupplyModal() {
@@ -358,6 +440,12 @@ function promptConfirmSupplyModal() {
     return;
   }
   if (pendingRequestItems.length === 0) return;
+
+  const currentTotal = pendingRequestItems.reduce((sum, it) => sum + (parseInt(it.quantity) || 0), 0);
+  if (weeklyQuotaState.used + currentTotal > weeklyQuotaState.limit) {
+    alert(`超出本週物資申請上限（每週上限 ${weeklyQuotaState.limit} 單位，您本週已用 ${weeklyQuotaState.used}，剩餘可申請 ${Math.max(0, weeklyQuotaState.limit - weeklyQuotaState.used)}）！`);
+    return;
+  }
 
   const name = document.getElementById("supply-name")?.value || "王小明";
   const phone = document.getElementById("supply-phone")?.value.trim() || "";
@@ -419,6 +507,7 @@ async function executeRealSupplySubmit() {
       if (document.getElementById("supply-address")) {
         document.getElementById("supply-address").value = "";
       }
+      await loadWeeklySupplyQuota();
       loadSupplyHistory();
     } else {
       alert(data.message || "送出失敗");
@@ -426,7 +515,6 @@ async function executeRealSupplySubmit() {
   } catch (e) {}
 }
 
-// 多選災害種類標籤
 function addDisasterTypeTag(typeVal) {
   if (!typeVal) return;
   if (!selectedDisasterTypes.includes(typeVal)) {
@@ -579,7 +667,6 @@ function removeSelectedImage() {
   if (box) box.classList.add("d-none");
 }
 
-// 需求申請歷史紀錄（專屬登入帳號）
 async function loadSupplyHistory() {
   const tbody = document.getElementById("supply-history-tbody");
   if (!tbody) return;
@@ -750,7 +837,6 @@ function openOrderDetailModal(orderNo) {
   new bootstrap.Modal(document.getElementById("orderProgressModal")).show();
 }
 
-// 災情通報即時看跑馬燈（一次呈現 2 筆全體通報）
 async function loadDisasterLiveTicker() {
   const summaryEl = document.getElementById("ticker-summary-text");
   const trackEl = document.getElementById("tickerTrack");
@@ -794,7 +880,6 @@ async function loadDisasterLiveTicker() {
   } catch(e) {}
 }
 
-// 通報處理進度追蹤（專屬登入帳號）
 async function loadDisasterAccordion() {
   const container = document.getElementById("disasterAccordion");
   if (!container) return;
@@ -896,7 +981,6 @@ function filterAndRenderDisasterAccordion() {
               <div class="col-md-7 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-warning text-dark">緊急度：${r.urgency || '待評估'}</span>
                     <span class="small text-muted"><i class="bi bi-person me-1"></i>通報人：${r.user_name || '市民'}</span>
                   </div>
                   <p class="text-secondary small mb-2" style="white-space: pre-line;"><strong>災情描述：</strong>\n${r.description}</p>
@@ -925,7 +1009,6 @@ function openDisasterDetailModal(reportNo) {
   document.getElementById("dmodal-status-badge").innerText = record.status || "通報受理";
   document.getElementById("dmodal-time").innerText = record.reported_at_str || "剛剛";
   document.getElementById("dmodal-location").innerText = `${record.district} ${record.location_description || ''}`;
-  document.getElementById("dmodal-urgency").innerText = record.urgency || "待評估";
   document.getElementById("dmodal-username").innerText = record.user_name || "市民 王先生";
   document.getElementById("dmodal-desc").innerText = record.description || "無詳細描述";
 
@@ -981,7 +1064,6 @@ async function confirmDisasterTaskResolved(reportNo) {
   loadVolunteerTasks();
 }
 
-// 民眾端志工任務：點擊展開詳細資訊與接案操作
 async function loadVolunteerTasks() {
   const container = document.getElementById("volunteerTasksAccordion");
   if (!container) return;
@@ -1067,7 +1149,6 @@ async function claimTaskPending(btn, taskId) {
   loadVolunteerTasks();
 }
 
-// 留言板載入與篩選
 async function loadBoardMessages() {
   const container = document.getElementById("board-message-list");
   if (!container) return;
